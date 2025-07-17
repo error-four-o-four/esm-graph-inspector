@@ -1,11 +1,11 @@
-import { defineBuildConfig } from "unbuild";
+import { defineBuildConfig } from 'unbuild';
 
 export default defineBuildConfig({
   entries: [
-    "./src/index.ts",
+    './src/index.ts',
   ],
-  outDir: "dist/cli",
-  declaration: "node16",
+  outDir: 'dist/cli',
+  declaration: 'node16',
   rollup: {
     inlineDependencies: true,
   },

@@ -1,8 +1,8 @@
-@import "tailwindcss";
-@import "@nuxt/ui";
+@import 'tailwindcss';
+@import '@nuxt/ui';
 
 @plugin "tailwind-scrollbar" {
-	nocompatible: true;
+  nocompatible: true;
 }
 
 :root {
@@ -25,8 +25,10 @@
   --ui-border-inverted: var(--color-white);
 }
 
-html, body, #__nuxt {
+html,
+body,
+#__nuxt {
   height: 100% !important;
   width: 100% !important;
-	overflow: hidden;
+  overflow: hidden;
 }

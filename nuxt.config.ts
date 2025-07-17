@@ -2,50 +2,50 @@
 export default defineNuxtConfig({
 
   modules: [
-    "@nuxt/eslint",
-    "@nuxt/icon",
-    "@nuxt/ui",
-    "@vueuse/nuxt",
+    '@nuxt/eslint',
+    '@nuxt/icon',
+    '@nuxt/ui',
+    '@vueuse/nuxt',
   ],
 
   ssr: false,
   devtools: { enabled: false },
 
   app: {
-    baseURL: "./",
+    baseURL: './',
     head: {
-      title: "Module Graph Inspector",
+      title: 'Module Graph Inspector',
       link: [
-        { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
       ],
-      viewport: "width=device-width,initial-scale=1",
+      viewport: 'width=device-width,initial-scale=1',
     },
   },
 
-  css: ["~/assets/css/main.css"],
+  css: ['~/assets/css/main.css'],
   ui: {
     colorMode: false,
   },
 
-  srcDir: "app",
+  srcDir: 'app',
   sourcemap: true,
-  compatibilityDate: "2025-05-15",
+  compatibilityDate: '2025-05-15',
 
   nitro: {
     output: {
-      dir: "./dist/app",
+      dir: './dist/app',
     },
     experimental: {
       websocket: true,
     },
-    preset: "static",
+    preset: 'static',
     routeRules: {
       ...Object.fromEntries([
-        "/",
-        "/200.html",
-        "/404.html",
+        '/',
+        '/200.html',
+        '/404.html',
       ].map(route => [route, { prerender: true }])),
-      "/*": {
+      '/*': {
         prerender: false,
       },
     },
@@ -53,7 +53,7 @@ export default defineNuxtConfig({
   },
 
   vite: {
-    base: "./",
+    base: './',
   },
 
   eslint: {

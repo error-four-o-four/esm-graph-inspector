@@ -9,7 +9,7 @@
         </div>
         <AppTopBar />
       </div>
-      
+
       <main class="w-full h-full p-8 flex items-center justify-center">
         <div>
           Some content ...
