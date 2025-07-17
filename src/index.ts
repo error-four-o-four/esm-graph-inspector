@@ -21,10 +21,11 @@ const argv = cli({
   },
 });
 
-console.log(`Starting ${cyan('ESM Graph Inspector')} ...`);
+const { url, host, port } = await getServerSettings(argv.flags);
+const { server } = createServer();
 
-const { url, port } = await getServerSettings(argv.flags);
-const { server } = createServer(port);
+server.listen(port, host, async () => {
+  console.log(`Started ${cyan('ESM Graph Inspector')} ...`);
 
-await server.ready();
-await open(url);
+  await open(url);
+});

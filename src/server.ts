@@ -1,6 +1,7 @@
-import { plugin as ws } from 'crossws/server';
+import wsAdapter from 'crossws/adapters/node';
 import { getPort } from 'get-port-please';
-import { H3, onError, onRequest, serve } from 'h3/node';
+import { createApp, toNodeListener } from 'h3';
+import { createServer as createNodeServer } from 'node:http';
 
 import { endpointWs } from '../shared/data.js';
 import socketHandler from './handler/socket.js';
@@ -41,29 +42,27 @@ export async function getServerSettings(options: ServerUserOptions): Promise<Ser
   };
 }
 
-export function createServer(port: number) {
-  const app = new H3({ debug: process.env.NODE_ENV === 'development' });
-
-  app.use(onRequest((event) => {
-    log(`Received ${event.req.method} Request on '${event.req.url}'`);
-  }));
-
-  app.use(onError((error) => {
-    log('Error:', error);
-  }));
+export function createServer() {
+  const app = createApp({
+    debug: process.env.NODE_ENV === 'development',
+    onRequest: (event) => {
+      log(`Received ${event.req.method} Request on '${event.req.url}'`);
+    },
+    onError: (error) => {
+      log('Error:', error);
+    },
+  });
 
   app.use(endpointWs, socketHandler);
 
   app.use(staticHandler);
 
-  const server = serve(app, {
-    port,
-    reusePort: true,
-    plugins: [
-      // @ts-expect-error https://github.com/h3js/h3/blob/main/examples/websocket.mjs
-      ws({ resolve: async req => (await app.fetch(req)).crossws }),
-    ],
-  });
+  // @ts-expect-error https://v1.h3.dev/adapters/node#websocket-support
+  const { handleUpgrade } = wsAdapter(app.websocket);
+
+  const server = createNodeServer(toNodeListener(app));
+
+  server.on('upgrade', handleUpgrade);
 
   return {
     app,

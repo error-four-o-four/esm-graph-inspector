@@ -1,4 +1,4 @@
-import { defineWebSocketHandler } from 'h3/node';
+import { defineWebSocketHandler } from 'h3';
 
 import type { Filetree } from '../../shared/types.js';
 

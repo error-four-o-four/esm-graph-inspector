@@ -1,6 +1,6 @@
-import type { ServeStaticOptions } from 'h3/node';
+import type { ServeStaticOptions } from 'h3';
 
-import { defineEventHandler, serveStatic } from 'h3/node';
+import { defineEventHandler, serveStatic } from 'h3';
 import { lookup } from 'mrmime';
 import { readFile, stat } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
