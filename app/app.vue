@@ -4,13 +4,14 @@ import { payload } from '~/composables/socket.js';
 
 <template>
   <UApp>
-    <main>
+    <main class="relative">
       <div v-if="!payload">
         Loading ...
       </div>
       <div v-else>
         <GraphCanvas :payload="payload" />
       </div>
+      <AppSideBar />
     </main>
   </UApp>
 </template>

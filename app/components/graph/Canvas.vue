@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { FileNode, Payload, TreeNode } from '~~/shared/types.js';
+import type { FileNode, FolderNode, Payload, TreeNode } from '~~/shared/types.js';
 import type { HierarchyPointNode } from 'd3-hierarchy';
 
-import { useEventListener } from '@vueuse/core';
+import { GraphFileNode, GraphFolderNode } from '#components';
 import { hierarchy, tree } from 'd3-hierarchy';
-import { nextTick, onMounted, ref, shallowReactive, shallowRef, useTemplateRef } from 'vue';
+import { nextTick, onMounted, ref, shallowReactive, shallowRef } from 'vue';
 
 const { payload } = defineProps<{
   payload: Payload;
@@ -13,19 +13,19 @@ const { payload } = defineProps<{
 const width = ref(window.innerWidth);
 const height = ref(window.innerHeight);
 
-const container = useTemplateRef<HTMLDivElement>('container');
-
 // example
 // https://observablehq.com/@d3/hierarchical-edge-bundling
 // https://observablehq.com/@d3/collapsible-tree
 // https://observablehq.com/@d3/indented-tree
 
-const foldersMap = shallowReactive(new Map<string, HierarchyPointNode<TreeNode>>());
+const foldersMap = shallowReactive(new Map<string, HierarchyPointNode<FolderNode>>());
 const filesMap = shallowReactive(new Map<string, HierarchyPointNode<FileNode>>());
-const linksMap = shallowReactive(new Map<TreeNodeLink['id'], TreeNodeLink>());
-const refsMap = shallowReactive(new Map<string, HTMLDivElement>());
+const othersMap = shallowReactive(new Map<string, HierarchyPointNode<FileNode>>());
+
+const linksMap = shallowRef<Map<TreeNodeLink['id'], TreeNodeLink>>();
 
 const nodes = shallowRef<HierarchyPointNode<TreeNode>[]>([]);
+const nodesRefMap = shallowReactive(new Map<string, HTMLDivElement>());
 
 type TreeNodeLink = {
   id: `${string}|${string}`;
@@ -53,10 +53,9 @@ function createGraph() {
 
   foldersMap.clear();
   filesMap.clear();
-  // nodesMap.clear();
 
-  // folders.value = [];
   nodes.value = [];
+  nodesRefMap.clear();
 
   const root = hierarchy<TreeNode>(payload.tree);
   const layout = tree<TreeNode>()(root);
@@ -97,13 +96,15 @@ function createGraph() {
 
       if (node.data.data) {
         filesMap.set(id, node as HierarchyPointNode<FileNode>);
+      } else {
+        othersMap.set(id, node as HierarchyPointNode<FileNode>);
       }
     } else {
       // folders.value.push(node);
-      foldersMap.set(id, node);
+      foldersMap.set(id, node as HierarchyPointNode<FolderNode>);
     }
 
-    nodes.value.push(node);
+    // nodes.value.push(node);
     // nodesMap.set(node.data.id, node);
   });
 
@@ -111,10 +112,10 @@ function createGraph() {
     width.value = maxX + 1.75 * paddingX + nodeWidth;
     height.value = maxY + 2 * paddingY;
 
-    createLinks(payload.links);
+    linksMap.value = createLinks(payload.links);
 
     if (payload.entry) {
-      const entry = refsMap.get(payload.entry);
+      const entry = nodesRefMap.get(payload.entry);
       entry?.scrollIntoView({ behavior: 'smooth' });
     }
   });
@@ -123,7 +124,7 @@ function createGraph() {
 function createLinks(data: Payload['links']) {
   if (!data) return;
 
-  linksMap.clear();
+  const result: Map<TreeNodeLink['id'], TreeNodeLink> = new Map();
 
   const bundles = createBundles(data);
   const anchors = createAnchors(bundles);
@@ -131,12 +132,12 @@ function createLinks(data: Payload['links']) {
   let bundleIndex = 0;
 
   for (const id of Object.keys(data)) {
-    const bundle = bundles[id]
+    const bundle = bundles[id];
 
     for (const from of bundle.from) {
       const linkId: TreeNodeLink['id'] = `${from}|${bundle.id}`;
 
-      if (linksMap.has(linkId)) {
+      if (result.has(linkId)) {
         console.log('skipped from', linkId);
         continue;
       }
@@ -147,7 +148,7 @@ function createLinks(data: Payload['links']) {
       const toAnchorIndex = bundle.all.indexOf(from);
       const toAnchor = anchors[bundle.id][toAnchorIndex];
 
-      linksMap.set(linkId, {
+      result.set(linkId, {
         id: linkId,
         // bundle: linksMap.size,
         bundle: bundleIndex,
@@ -159,7 +160,7 @@ function createLinks(data: Payload['links']) {
     bundleIndex += 1;
   }
 
-  console.log(...linksMap.entries());
+  return result;
 }
 
 type Bundle = {
@@ -208,7 +209,7 @@ function createBundles(data: NonNullable<Payload['links']>): Record<string, Bund
 function createAnchors(data: Record<string, Bundle>): Record<string, TreeNodeLinkCoord[]> {
   const entries = Object.entries(data)
     .map(([id, bundle]) => {
-      const nodeRef = refsMap.get(id);
+      const nodeRef = nodesRefMap.get(id);
 
       if (!nodeRef) {
         // make ts happy
@@ -234,26 +235,6 @@ function createAnchors(data: Record<string, Bundle>): Record<string, TreeNodeLin
     .filter((entry): entry is [string, { x: number; y: number }[]] => Boolean(entry));
 
   return Object.fromEntries(entries);
-}
-
-function getNextSibling(node: HierarchyPointNode<TreeNode>) {
-  if (!node.parent || !node.parent.children) return undefined;
-
-  return node.parent.children[node.parent.children.indexOf(node) + 1];
-}
-
-function generateFolderLine(node: HierarchyPointNode<TreeNode>) {
-  if (!node.parent || !node.parent.children) return undefined;
-
-  const next = getNextSibling(node) || getNextSibling(node.parent);
-
-  if (!next) return undefined;
-
-  const x = node.x + 10;
-  return [
-    `M${x},${node.y + 0.75 * nodeHeight}`,
-    `L${x},${next.y - 0.5 * nodeHeight}`,
-  ].join('\n');
 }
 
 function generateLinkLine(link: TreeNodeLink) {
@@ -291,52 +272,7 @@ function generateLinkColor(link: TreeNodeLink, length: number) {
 
 // ### //
 
-const isGrabbing = shallowRef(false);
-
-function handleDrag() {
-  let x = 0;
-  let y = 0;
-
-  useEventListener(container, 'mousedown', (e) => {
-    if (!container.value) return;
-
-    isGrabbing.value = true;
-    x = container.value.scrollLeft + e.pageX;
-    y = container.value.scrollTop + e.pageY;
-  });
-
-  useEventListener(container, 'mousemove', (e) => {
-    if (!container.value || !isGrabbing.value) return;
-
-    e.preventDefault();
-    container.value.scrollLeft = x - e.pageX;
-
-    if (container.value.scrollLeft <= 0) {
-      x = e.pageX;
-    }
-
-    if (container.value.scrollLeft >= container.value.scrollWidth - container.value.offsetWidth) {
-      x = container.value.scrollLeft + e.pageX;
-    }
-
-    container.value.scrollTop = y - e.pageY;
-
-    if (container.value.scrollTop <= 0) {
-      y = e.pageY;
-    }
-
-    if (container.value.scrollTop >= container.value.scrollHeight - container.value.offsetHeight) {
-      y = container.value.scrollTop + e.pageY;
-    }
-  });
-
-  useEventListener(container, 'mouseleave', () => isGrabbing.value = false);
-  useEventListener(container, 'mouseup', () => isGrabbing.value = false);
-}
-
 onMounted(() => {
-  handleDrag();
-
   watch(
     () => payload,
     createGraph,
@@ -346,46 +282,37 @@ onMounted(() => {
 </script>
 
 <template>
-  <div ref="container" class="w-screen h-screen relative select-none overflow-auto">
-    <div :style="{ minWidth: `${width}px`, minHeight: `${height}px` }">
-      <svg
-        class="pointer-events-none absolute left-0 top-0"
-        :width="width"
-        :height="height"
-      >
-        <g>
-          <path
-            v-for="folder of foldersMap.values()"
-            :key="folder.data.id"
-            :d="generateFolderLine(folder)"
-            fill="none"
-            class="stroke-neutral-800 stroke-2"
-          />
-        </g>
-      </svg>
-      <svg
-        class="pointer-events-none absolute left-0 top-0"
-        :width="width"
-        :height="height"
-      >
-        <g>
-          <path
-            v-for="link of linksMap.values()"
-            :key="link.id"
-            :d="generateLinkLine(link)"
-            fill="none"
-            :stroke="generateLinkColor(link, linksMap.size)"
-            class="stroke-2"
-          />
-        </g>
-      </svg>
-      <template v-for="node of nodes" :key="node.data.id">
-        <GraphNode
-          v-if="node.data.name !== '<root>'"
-          :ref="(el: any) => refsMap.set(node.data.id, el?.$el)"
+  <Draggable :width="width" :height="height">
+    <svg
+      v-if="linksMap"
+      class="pointer-events-none absolute left-0 top-0"
+      :width="width"
+      :height="height"
+    >
+      <g>
+        <path
+          v-for="link of linksMap.values()"
+          :key="link.id"
+          :d="generateLinkLine(link)"
+          fill="none"
+          :stroke="generateLinkColor(link, linksMap.size)"
+          class="stroke-2"
+        />
+      </g>
+    </svg>
+    <div>
+      <template v-for="node of foldersMap.values()" :key="node.data.id">
+        <GraphFolderNode :node="node" />
+      </template>
+      <template v-for="node of filesMap.values()" :key="node.data.id">
+        <GraphFileNode
+          :ref="(el: any) => nodesRefMap.set(node.data.id, el?.$el)"
           :node="node"
         />
       </template>
+      <template v-for="node of othersMap.values()" :key="node.data.id">
+        <GraphFileNode :node="node" />
+      </template>
     </div>
-  </div>
+  </Draggable>
 </template>
