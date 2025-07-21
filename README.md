@@ -1,75 +1,17 @@
-# Nuxt Minimal Starter
+# ESM Graph Inspector
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+A development tool built on top of [@thepassle/module-graph](https://github.com/thepassle/module-graph) for inspecting imports and exports chains. Build with [Nuxt](https://nuxt.com/).
 
-## Setup
+## Usage
 
-Make sure to install dependencies:
+`npx esm-graph-inspector`
 
-```bash
-# npm
-npm install
+## Development
 
-# pnpm
-pnpm install
+Either
 
-# yarn
-yarn install
+`npm run dev:app`
 
-# bun
-bun install
-```
+or
 
-## Development Server
-
-Start the development server on `http://localhost:3000`:
-
-```bash
-# npm
-npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
-```
-
-## Production
-
-Build the application for production:
-
-```bash
-# npm
-npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
-```
-
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+`npm run dev:cli` and `npm run watch`
