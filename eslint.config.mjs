@@ -28,18 +28,26 @@ export default withNuxt(antfu({
     'ts/no-redeclare': 'off',
     'ts/consistent-type-definitions': ['error', 'type'],
     'no-console': ['warn'],
+    'antfu/if-newline': 'off',
     'antfu/no-top-level-await': ['off'],
     'node/prefer-global/process': ['off'],
     'node/no-process-env': ['warn'],
     'perfectionist/sort-imports': ['error', {
       tsconfigRootDir: '.',
     }],
-    'unicorn/filename-case': ['error', {
-      case: 'kebabCase',
-      ignore: ['README.md'],
-    }],
+    // 'unicorn/filename-case': ['error', {
+    //   case: 'kebabCase',
+    //   ignore: ['README.md'],
+    // }],
   },
-}, {
+},
+// {
+//   files: ['app/components/**/*.vue'],
+//   rules: {
+//     'unicorn/filename-case': ['error', { case: 'pascalCase' }],
+//   },
+// },
+{
   files: ['src/**/*.ts'],
   rules: {
     'no-console': 'off',

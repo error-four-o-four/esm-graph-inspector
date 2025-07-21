@@ -1,31 +1,21 @@
 import { defineWebSocketHandler } from 'h3';
 
-import type { Filetree } from '../../shared/types.js';
-
-import { createFileTree } from '../graph/filesystem.js';
-import { createLogger } from '../utils.js';
+import { createPayload } from '../payload.js';
+import { createLogger, yellow } from '../utils.js';
 
 const wssLog = createLogger('wss');
-
-// @todo
-// cli flag --watch
-// implement chokidar
-let filetree: Filetree;
 
 export default defineWebSocketHandler(({
   async open(peer) {
     wssLog('open: id', peer.id);
 
-    filetree ??= (await createFileTree());
+    const payload = await createPayload();
 
-    console.log(filetree);
-
-    peer.send(JSON.stringify({ type: 'filetree', data: filetree }));
+    peer.send(JSON.stringify(payload));
   },
 
   async message(peer, message) {
-    wssLog('from: ', peer.id);
-    wssLog('msg:', message.id, message);
+    wssLog(`received msg ${yellow(message.id)} from ${yellow(peer.id)}`);
   },
 
   close(peer, details) {

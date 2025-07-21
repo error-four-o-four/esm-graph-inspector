@@ -27,5 +27,9 @@ const { server } = createServer();
 server.listen(port, host, async () => {
   console.log(`Started ${cyan('ESM Graph Inspector')} ...`);
 
-  await open(url);
+  if (process.env.NODE_ENV !== 'development') {
+    await open(url);
+  } else {
+    console.log(`Listening on ${cyan(url)} ...`);
+  }
 });

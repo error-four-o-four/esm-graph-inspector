@@ -28,7 +28,6 @@
 html,
 body,
 #__nuxt {
-  height: 100% !important;
-  width: 100% !important;
-  overflow: hidden;
+  height: 100vh;
+  /* overflow: hidden; */
 }

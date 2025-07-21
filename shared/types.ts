@@ -1,27 +1,41 @@
+import type { ExtendedModule } from '@thepassle/module-graph/plugins/unused-exports.js';
+
 export type Extension = `.${string}`;
 
-type FtBase = {
-  type: 'dir' | 'file';
+type BaseNode = {
+  id: string;
+  name: string;
   parentPath: string;
 };
 
-export type FtFile = FtBase & {
+export type FileNode = BaseNode & {
   type: 'file';
-  ext: Extension;
+  ext: string;
+  data?: ModuleData;
 };
 
-export type FtDir = FtBase & {
+export type FolderNode = BaseNode & {
   type: 'dir';
-  children: Filetree;
+  children: TreeNode[];
 };
 
-export type FtItem = FtDir | FtFile;
+export type TreeNode = FileNode | FolderNode;
 
-export type Filetree = Record<string, FtItem>;
+export type ModuleData = Pick<
+  ExtendedModule,
+  | 'facade'
+  | 'hasModuleSyntax'
+  | 'importedBy'
+  | 'imports'
+  | 'exports'
+>;
 
-export type PayloadFileTree = {
-  type: 'filetree';
-  data: Filetree;
+// ### //
+
+export type Payload = {
+  tree: TreeNode;
+  entry?: string;
+  nodes: Record<string, TreeNode>;
+  links?: Record<string, string[]>;
+
 };
-
-export type Payload = PayloadFileTree;
