@@ -3,7 +3,8 @@ import type { ServeStaticOptions } from 'h3';
 import { defineEventHandler, serveStatic } from 'h3';
 import { lookup } from 'mrmime';
 import { readFile, stat } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 type MetaCache = {
   type: string | undefined;
@@ -41,7 +42,7 @@ function readContentCache(id: string) {
   return contentCache.get(id);
 }
 
-const dir = resolve('./dist/app/public');
+const dir = fileURLToPath(new URL('../../dist/app/public', import.meta.url));
 
 const options: ServeStaticOptions = {
   fallthrough: true,
