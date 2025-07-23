@@ -54,6 +54,16 @@ export default defineNuxtConfig({
 
   vite: {
     base: './',
+    server: {
+      proxy: {
+        '/api/socket': {
+          // @todo get port dynamically
+          target: `ws://localhost:7777/api/socket`,
+          ws: true,
+          rewriteWsOrigin: true,
+        },
+      },
+    },
   },
 
   eslint: {
