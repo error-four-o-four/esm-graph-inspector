@@ -1,5 +1,5 @@
 {
-  "name": "esm-graph-inspector",
+  "name": "module-graph-inspector",
   "type": "module",
   "version": "0.0.1",
   "bin": "./bin.mjs",
