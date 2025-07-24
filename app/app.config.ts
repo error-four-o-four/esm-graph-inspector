@@ -2,11 +2,7 @@ export default defineAppConfig({
   ui: {
     colors: {
       primary: 'emerald',
-      neutral: 'gray',
-    },
-    icons: {
-      folder: 'tabler:folder',
-      folderOpen: 'tabler:folder-open',
+      neutral: 'zinc',
     },
     tree: {
       defaultVariants: {

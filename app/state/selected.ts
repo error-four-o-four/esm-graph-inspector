@@ -1,48 +1,39 @@
-import type { FileNode } from '~~/shared/types';
-import type { HierarchyPointNode } from 'd3-hierarchy';
+import type { FileData } from '~~/shared/types';
 
-import { computed, shallowRef } from 'vue';
+import { shallowRef } from 'vue';
 
-import { payload } from '~/composables/socket.js';
+// import { payload } from '~/composables/socket.js';
 
-export const selectedNode = shallowRef<HierarchyPointNode<FileNode>>();
+export const selectedFile = shallowRef<FileData>();
 
-export const selectedSpecs = computed(() => {
-  if (!selectedNode.value) return;
+export function selectFile(file: FileData) {
+  selectedFile.value = file;
+}
 
-  const { id, name, parentPath } = selectedNode.value.data;
+// export const imports = computed<string[] | undefined>(() => {
+//   const values = selectedNode.value?.data?.data?.imports;
 
-  return {
-    id,
-    name,
-    parentPath,
-  };
-});
+//   if (values === undefined || values.length === 0 || payload.value === undefined) return;
 
-export const imports = computed<string[] | undefined>(() => {
-  const values = selectedNode.value?.data?.data?.imports;
+//   const result = new Set<string>();
 
-  if (values === undefined || values.length === 0 || payload.value === undefined) return;
+//   for (const value of values) {
+//     result.add(`'${value.module}'`);
+//   }
 
-  const result = new Set<string>();
+//   return [...result];
+// });
 
-  for (const value of values) {
-    result.add(`'${value.module}'`);
-  }
+// export const exports = computed<string[] | undefined>(() => {
+//   const values = selectedNode.value?.data?.data?.exports;
 
-  return [...result];
-});
+//   if (values === undefined || values.length === 0 || payload.value === undefined) return;
 
-export const exports = computed<string[] | undefined>(() => {
-  const values = selectedNode.value?.data?.data?.exports;
+//   const result = new Set<string>();
 
-  if (values === undefined || values.length === 0 || payload.value === undefined) return;
+//   for (const value of values) {
+//     result.add(`'${value.name}'`);
+//   }
 
-  const result = new Set<string>();
-
-  for (const value of values) {
-    result.add(`'${value.name}'`);
-  }
-
-  return [...result];
-});
+//   return [...result];
+// });

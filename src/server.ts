@@ -64,6 +64,8 @@ export function createServer() {
 
   server.on('upgrade', handleUpgrade);
 
+  server.on('error', error => log('Error:', error));
+
   return {
     app,
     server,

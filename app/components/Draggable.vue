@@ -8,6 +8,7 @@ const { width, height } = defineProps<{
 }>();
 
 const container = useTemplateRef<HTMLDivElement>('container');
+const content = useTemplateRef<HTMLDivElement>('content');
 
 const isGrabbing = shallowRef(false);
 
@@ -16,7 +17,9 @@ function handleDrag() {
   let y = 0;
 
   useEventListener(container, 'mousedown', (e) => {
-    if (!container.value) return;
+    if (!container.value || !content.value) return;
+
+    if (e.target !== content.value) return;
 
     isGrabbing.value = true;
     x = container.value.scrollLeft + e.pageX;
@@ -49,22 +52,15 @@ function handleDrag() {
   });
 
   useEventListener(container, 'mouseleave', () => isGrabbing.value = false);
-  useEventListener(container, 'mouseup', () => isGrabbing.value = false);
+  useEventListener(container, 'mouseup', () => isGrabbing.value = false); // @todo target = window??
 }
 
-onMounted(() => {
-  handleDrag();
-});
+onMounted(() => handleDrag());
 </script>
 
 <template>
-  <div
-    ref="container"
-    class="
-    w-screen h-screen relative select-none
-    scrollbar-thin overflow-auto"
-  >
-    <div :style="{ minWidth: `${width}px`, minHeight: `${height}px` }">
+  <div ref="container" class=" w-screen h-screen relative select-none scrollbar-thin overflow-auto">
+    <div ref="content" :style="{ minWidth: `${width}px`, minHeight: `${height}px`, cursor: isGrabbing ? 'grabbing' : undefined }">
       <slot />
     </div>
   </div>
