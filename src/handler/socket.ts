@@ -1,32 +1,59 @@
 import { defineWebSocketHandler } from 'h3';
 
-import type { Payload, PayloadRequest } from '../../shared/types.js';
+import type { ChangedPayload, Payload, PayloadRequest } from '../../shared/types/payload.js';
 
-import { createFiletreePayload } from '../payload/filetree.js';
-import { createModuleGraphPayload } from '../payload/graph.js';
-import { createLogger, red, yellow } from '../utils.js';
+import { setUserEntryPoint } from '../data.js';
+import { createFileTreePayload, createModuleGraphPayload } from '../payload.js';
+import { red, wssLogger, yellow } from '../utils.js';
 
-const wssLog = createLogger('wss');
+// https://github.com/h3js/h3/issues/716
+type Peer = Parameters<NonNullable<Parameters<typeof defineWebSocketHandler>[0]['open']>>[0];
 
-// @todo => src/index.ts
-const filetreePayload = createFiletreePayload();
+export const peers: Set<Peer> = new Set();
+
+export function notifyClients(type: ChangedPayload['type'], path: string) {
+  const payload = JSON.stringify({
+    type,
+    data: {
+      path,
+    },
+  });
+
+  for (const peer of peers) {
+    peer.send(payload);
+  }
+}
+
+// const requestHandler: {
+//   [K in PayloadRequest['type']]: (req: GenericPayloadRequest<K>) => Promise<GenericPayload<K> | ErrorPayload>
+// } = {
+//   tree: createFileTreePayload,
+//   graph: async (req: GenericPayloadRequest<'graph'>) => {
+//     if (req.file) {
+//       setUserEntryPoint(req.file);
+//     }
+//     return createModuleGraphPayload();
+//   },
+// };
 
 export default defineWebSocketHandler(({
   async open(peer) {
-    wssLog('open: id', peer.id);
+    peers.add(peer);
+    wssLogger('open: id', peer.id, peers.size);
   },
 
   close(peer, details) {
-    wssLog('close: id', peer.id, details);
+    peers.delete(peer);
+    wssLogger('close: id', peer.id, details);
   },
 
   error(peer, error) {
-    wssLog(red('Error'), peer.id);
-    wssLog(String(error));
+    wssLogger(red('Error'), peer.id);
+    wssLogger(String(error));
   },
 
   async message(peer, message) {
-    wssLog(`received msg ${yellow(message.id)} from ${yellow(peer.id)}`);
+    wssLogger(`received message from ${yellow(peer.id)}`);
 
     let payload: Payload;
 
@@ -34,11 +61,16 @@ export default defineWebSocketHandler(({
       const request = message.json<PayloadRequest>();
 
       // @todo consider a switch/getter statement
+      // Argument of type 'PayloadRequest' is not assignable to parameter of type 'never'.
+      // The intersection 'FileTreeDataRequest & GraphDataRequest' was reduced to 'never' because property 'type' has conflicting types in some constituents.
+      // payload = await requestHandler[request.type](request);
+
       if (request.type === 'tree') {
         // await new Promise(res => setTimeout(res, 2000));
-        payload = await filetreePayload;
+        payload = await createFileTreePayload();
       } else if (request.type === 'graph') {
-        payload = await createModuleGraphPayload(request);
+        if (request.file) setUserEntryPoint(request.file);
+        payload = await createModuleGraphPayload();
       } else {
         throw new Error('Not implemented yet');
       }
@@ -55,11 +87,11 @@ export default defineWebSocketHandler(({
         message,
       };
 
-      wssLog(red('Error'), peer.id);
-      wssLog(String(catched));
+      wssLogger(red('Error'), peer.id);
+      wssLogger(String(catched));
     }
 
-    wssLog('sending', payload.type);
+    wssLogger('sending', payload.type);
 
     peer.send(JSON.stringify(payload));
   },

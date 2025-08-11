@@ -1,4 +1,4 @@
-import type { Payload, PayloadRequest } from '~~/shared/types';
+import type { Payload, PayloadRequest } from '~~/shared/types/payload.js';
 
 import { endpointWs } from '~~/shared/data.js';
 import { shallowRef } from 'vue';
@@ -7,7 +7,7 @@ const url = `ws://${location.host}${endpointWs}`;
 
 const payload = shallowRef<Payload | undefined>();
 
-const { send, status } = useWebSocket(url, {
+const { send, status, ws } = useWebSocket(url, {
   // heartbeat: {
   //   message: 'ping',
   //   interval: 10 * 1000,
@@ -29,20 +29,21 @@ const { send, status } = useWebSocket(url, {
   },
   onDisconnected() {
     // console.log('[ws] disconnected', e.timeStamp);
-    payload.value = Object.freeze({
-      type: 'warning',
-      message: 'Closed WebSocket conection.',
-    });
+    // @todo differntiate payload.error & warning
+    // payload.value = Object.freeze({
+    //   type: 'warning',
+    //   message: 'Closed WebSocket conection.',
+    // });
   },
   onMessage(_, e) {
-    // @todo types
-    // console.log('[ws] message', e.timeStamp);
     const result: Payload = JSON.parse(e.data);
 
     if (!result || result.type === 'warning' || result.type === 'error') {
+      // @todo
       console.warn(result.message || 'An unexpected error occured!');
     }
 
+    console.log('[ws] message', e.timeStamp, result);
     payload.value = Object.freeze(result);
   },
 });
@@ -53,6 +54,7 @@ function requestPayload<T = PayloadRequest>(request: T) {
 
 export function usePayload() {
   return {
+    ws,
     status,
     payload,
     requestPayload,

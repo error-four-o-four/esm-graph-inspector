@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { FolderLinkData } from '~~/shared/types.js';
+import type { FolderLinkData } from '~~/shared/types/data.js';
 
 import { computed } from 'vue';
 

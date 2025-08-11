@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { FileTreeData } from '~~/shared/types.js';
+import type { FileTreeData } from '~~/shared/types/data.js';
 
 import { ref } from 'vue';
 
-import type { LayoutInstance } from '~/types/tree.js';
+import type { LayoutInstance } from '~/types/components.js';
 
 import useContainerDimensions from '~/composables/useContainerDimensions.js';
 import useLayoutOffsets from '~/composables/useLayoutOffsets.js';

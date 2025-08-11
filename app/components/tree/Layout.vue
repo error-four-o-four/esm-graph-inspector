@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { FileTreeData, FolderData, FolderID } from '~~/shared/types.js';
+import type { FileTreeData, FolderData, FolderID } from '~~/shared/types/data.js';
 
 import { useTemplateRef, watch } from 'vue';
 
-import type { FolderInstance } from '~/types/tree.js';
+import type { FolderInstance } from '~/types/components.js';
 
 import useContainerDimensions from '~/composables/useContainerDimensions.js';
 import useLayoutOffsets from '~/composables/useLayoutOffsets.js';
@@ -32,7 +32,7 @@ const {
 
 const { folderHeights } = useNodeOffsets();
 
-const { openedFolderIds } = useOpenedFolders();
+const { openedFolderIds, clear } = useOpenedFolders();
 
 function handleOpenedFoldersUpdate(
   next: typeof openedFolderIds.value,
@@ -90,7 +90,10 @@ onMounted(() => {
 });
 
 // onUpdated(() => console.log('updated LAYOUT'));
-// onUnmounted(() => console.log('unmounted LAYOUT', folderRefs.value));
+onUnmounted(() => {
+  // console.log('unmounted LAYOUT', folderRefs.value);
+  clear();
+});
 
 // onUnmounted(() => {
 //   // @todo

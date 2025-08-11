@@ -1,4 +1,4 @@
-import type { FileTreeData, FolderID } from '~~/shared/types.js';
+import type { FileTreeData, FolderID } from '~~/shared/types/data.js';
 
 import { ref } from 'vue';
 
@@ -13,7 +13,6 @@ const { offsetYBase } = useLayoutOffsets();
 const { folderHeights } = useNodeOffsets();
 
 // @todo consider bundles per level
-// store filetree depth
 let folderIds: FolderID[];
 
 function initContainerDimensions(data: FileTreeData) {

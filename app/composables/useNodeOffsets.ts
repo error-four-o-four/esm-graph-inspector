@@ -1,6 +1,6 @@
-import type { FileID, FolderID } from '~~/shared/types.js';
+import type { FileID, FolderID } from '~~/shared/types/data.js';
 
-import type { FolderInstance } from '~/types/tree.js';
+import type { FolderInstance } from '~/types/components.js';
 
 import { SPACING_Y } from '~/composables/layout.js';
 

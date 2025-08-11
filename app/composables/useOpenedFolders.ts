@@ -1,4 +1,4 @@
-import type { FolderID } from '~~/shared/types';
+import type { FolderID } from '~~/shared/types/data';
 
 import { shallowRef } from 'vue';
 
@@ -16,10 +16,15 @@ function remove(folderId: FolderID) {
   openedFolderIds.value = _opened;
 }
 
+function clear() {
+  openedFolderIds.value = new Set();
+}
+
 export default function useOpenedFolders() {
   return {
     openedFolderIds,
     add,
     remove,
+    clear,
   };
 }

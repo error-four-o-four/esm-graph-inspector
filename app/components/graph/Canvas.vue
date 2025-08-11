@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { graphLinkData } from '~/state/data.js';
+import { graphData } from '~/state/data.js';
 
 defineProps<{
   width: number;
@@ -9,12 +9,13 @@ defineProps<{
 
 <template>
   <svg
+    v-if="graphData"
     class="pointer-events-none absolute left-0 top-0 stroke-2"
     :width="width"
     :height="height"
   >
     <GraphLink
-      v-for="link of graphLinkData"
+      v-for="link of graphData.links"
       :id="link.id"
       :key="link.id"
       :bundle="link.bundle"

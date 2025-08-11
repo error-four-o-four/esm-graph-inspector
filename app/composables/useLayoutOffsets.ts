@@ -1,5 +1,5 @@
 import type { UseTransitionOptions } from '@vueuse/core';
-import type { FileTreeData, FolderID } from '~~/shared/types.js';
+import type { FileTreeData, FolderID } from '~~/shared/types/data.js';
 import type { ComputedRef, Ref } from 'vue';
 
 import { useTransition } from '@vueuse/core';
@@ -12,6 +12,7 @@ const transitionDefaults: UseTransitionOptions = {
   transition: [0.25, 0.1, 0.25, 1.0],
 };
 
+// @todo
 // based on hierarchy depth index
 const offsetXBase: Ref<number>[] = [];
 const offsetX: ComputedRef<number>[] = [];

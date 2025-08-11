@@ -2,32 +2,40 @@
 import { computed, ref, watchEffect } from 'vue';
 
 import { usePayload } from '~/composables/usePayload.js';
-import { addToast } from '~/composables/useToast.js';
-import { errorData, filetreeData, graphData } from '~/state/data.js';
+// import { addToast } from '~/composables/useToast.js';
+import { errorData, graphData, treeData } from '~/state/data.js';
 
-import type Container from './components/graph/Container.vue';
+import type { ContainerInstance } from './types/components.js';
 
 const { requestPayload, status } = usePayload();
 
-const containerRef = ref<InstanceType<typeof Container> | null>();
-const isReady = computed(() => filetreeData.value && containerRef.value && containerRef.value.isInitiated);
+const containerRef = ref<ContainerInstance | null>();
+const isReady = computed(() => treeData.value && containerRef.value && containerRef.value.isInitiated);
 
 watchEffect(async () => {
+  // console.log(status.value);
+
   if (status.value !== 'OPEN') return;
 
   if (errorData.value) {
-    const { type, message, error } = errorData.value;
-    error && console.warn(error);
-    addToast(type, message);
+    // @todo
+    // const { type, message } = errorData.value;
+    // addToast(type, message);
+
+    // if (payload.value.type === 'error') {
+    //   const code = payload.value.message ? 4000 : 1011;
+    //   const message = payload.value.message || 'An unexpected error occured!';
+    //   ws.close(code, message);
+    // }
     return;
   }
 
-  if (!filetreeData.value) {
+  if (!treeData.value) {
     requestPayload({ type: 'tree' });
     await nextTick();
   }
 
-  if (filetreeData.value && !graphData.value) {
+  if (treeData.value && !graphData.value) {
     requestPayload({ type: 'graph' });
     await nextTick();
   }
@@ -46,9 +54,9 @@ watchEffect(async () => {
   <UApp>
     <main class="relative">
       <GraphContainer
-        v-if="filetreeData"
+        v-if="treeData"
         ref="containerRef"
-        :tree="filetreeData"
+        :tree="treeData"
       />
       <Transition name="overlay">
         <div

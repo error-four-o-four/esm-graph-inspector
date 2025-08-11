@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import type { ModuleGraphLinkData } from '~~/shared/types/data.js';
 
-import type { GraphLinkData } from '~/types/tree.js';
+import { computed } from 'vue';
 
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '~/composables/layout.js';
 import useNodeOffsets from '~/composables/useNodeOffsets.js';
 
-const { id, source, target, bundle } = defineProps<GraphLinkData>();
+const { id, source, target, bundle } = defineProps<ModuleGraphLinkData>();
 
 const { fileOffset } = useNodeOffsets();
 

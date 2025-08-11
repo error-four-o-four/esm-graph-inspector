@@ -36,6 +36,16 @@ export type FolderLinkData = {
 
 export type FolderLinkID = `${FolderID}|${FolderID}`;
 
+export type FileTreeData = {
+  root: FolderData;
+  files: Record<FileID, FileData>;
+  fileIds: FileID[];
+  folders: Record<FolderID, FolderData>;
+  folderIds: FolderID[];
+  folderLinks: FolderLinkData[];
+  levels: FolderID[][];
+};
+
 // ###
 
 export type ModuleData = Pick<
@@ -47,50 +57,23 @@ export type ModuleData = Pick<
   | 'exports'
 >;
 
-// ### send from server ### //
-
-export type FileTreeData = {
-  root: FolderData;
-  files: Record<FileID, FileData>;
-  fileIds: FileID[];
-  folders: Record<FolderID, FolderData>;
-  folderIds: FolderID[];
-  folderLinks: FolderLinkData[];
-  levels: FolderID[][];
+export type ModuleGraphLinkData = {
+  id: string;
+  bundle: number;
+  source: {
+    file: FileData;
+    folder: FolderData;
+  };
+  target: {
+    file: FileData;
+    folder: FolderData;
+  };
 };
 
-export type FileTreePayload = {
-  type: 'filetree';
-  data: FileTreeData;
-};
-
-export type GraphData = {
+export type ModuleGraphData = {
   entry: string;
-  links: Record<string, string[]>;
+  fileIds: FileID[];
+  folderIds: FolderID[];
+  links: ModuleGraphLinkData[];
+  linkIds: Record<string, string[]>;
 };
-
-export type GraphPayload = {
-  type: 'graph';
-  data: GraphData;
-};
-
-export type ErrorPayload = {
-  type: 'error' | 'warning';
-  error?: unknown;
-  message: string;
-};
-
-export type Payload = ErrorPayload | FileTreePayload | GraphPayload;
-
-// ### send from peer ### //
-
-export type FileTreeDataRequest = {
-  type: 'tree';
-};
-
-export type GraphDataRequest = {
-  type: 'graph';
-  file?: string;
-};
-
-export type PayloadRequest = FileTreeDataRequest | GraphDataRequest;

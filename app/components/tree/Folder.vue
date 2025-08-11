@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { FileData, FolderData } from '~~/shared/types.js';
+import type { FileData, FolderData } from '~~/shared/types/data.js';
 
 import { computed, ref, watch } from 'vue';
 
@@ -7,7 +7,7 @@ import { DEFAULT_NODE_HEIGHT } from '~/composables/layout.js';
 import useLayoutOffsets from '~/composables/useLayoutOffsets.js';
 import useNodeOffsets from '~/composables/useNodeOffsets.js';
 import useOpenedFolders from '~/composables/useOpenedFolders.js';
-import { graphFolderIds } from '~/state/data.js';
+import { graphData } from '~/state/data.js';
 
 type Props = Omit<FolderData, 'fileIds' | 'folderIds'> & {
   files: FileData[];
@@ -25,7 +25,7 @@ const height = ref(`${DEFAULT_NODE_HEIGHT}px`);
 
 const { openedFolderIds, add, remove } = useOpenedFolders();
 
-const isActive = computed(() => graphFolderIds.value && graphFolderIds.value.has(props.id));
+const isActive = computed(() => graphData.value && graphData.value.folderIds.includes(props.id));
 const isOpened = computed(() => openedFolderIds.value.has(props.id));
 const isDisabled = props.files.length === 0;
 

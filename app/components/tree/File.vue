@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { FileData, PayloadRequest } from '~~/shared/types.js';
+import type { FileData } from '~~/shared/types/data.js';
+import type { PayloadRequest } from '~~/shared/types/payload.js';
 
 import { extensions } from '~~/shared/data.js';
 import { computed } from 'vue';
