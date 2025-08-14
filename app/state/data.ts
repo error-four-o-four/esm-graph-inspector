@@ -3,9 +3,7 @@ import type { ErrorPayload } from '~~/shared/types/payload';
 
 import { shallowRef, watch } from 'vue';
 
-import { usePayload } from '~/composables/usePayload.js';
-
-const { payload } = usePayload();
+import { payload } from '~/composables/usePayload.js';
 
 export const errorData = shallowRef<ErrorPayload>();
 

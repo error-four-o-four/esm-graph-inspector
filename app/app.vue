@@ -1,21 +1,17 @@
 <script setup lang="ts">
-import { computed, ref, watchEffect } from 'vue';
+import { computed, watch, watchEffect } from 'vue';
 
-import { usePayload } from '~/composables/usePayload.js';
-// import { addToast } from '~/composables/useToast.js';
+import { requestPayload, socketStatus } from '~/composables/usePayload.js';
+import { isInitialized } from '~/composables/useTreeDimensions.js';
+// import { addToast } from '~/composables/useToasts.js';
 import { errorData, graphData, treeData } from '~/state/data.js';
 
-import type { ContainerInstance } from './types/components.js';
-
-const { requestPayload, status } = usePayload();
-
-const containerRef = ref<ContainerInstance | null>();
-const isReady = computed(() => treeData.value && containerRef.value && containerRef.value.isInitiated);
+const isReady = computed(() => treeData.value && isInitialized.value);
 
 watchEffect(async () => {
   // console.log(status.value);
 
-  if (status.value !== 'OPEN') return;
+  if (socketStatus.value !== 'OPEN') return;
 
   if (errorData.value) {
     // @todo
@@ -41,11 +37,26 @@ watchEffect(async () => {
   }
 });
 
+onMounted(() => {
+  const handler = watch(
+    () => [isReady.value, graphData.value],
+    () => {
+      if (!isReady.value || !graphData.value) return;
+
+      // @todo calculate min max graph svg and center/zoom
+
+      const elt = document.getElementById(graphData.value.entry);
+      elt && elt.scrollIntoView({ behavior: 'smooth' });
+
+      handler.stop();
+    },
+  );
+});
+
 // onMounted(() => console.log('mounted APP'));
 // onUpdated(() => console.log('updated APP'));
 // onUnmounted(() => console.log('unmounted APP'));
 
-// @todo scroll entry into view
 // @todo expand/collapse all btns
 // @todo - precompute bundles per level and adjust horizontal spacing/offset of a folder
 </script>
@@ -55,7 +66,6 @@ watchEffect(async () => {
     <main class="relative">
       <GraphContainer
         v-if="treeData"
-        ref="containerRef"
         :tree="treeData"
       />
       <Transition name="overlay">
@@ -79,10 +89,14 @@ watchEffect(async () => {
 </template>
 
 <style>
+.overlay-enter-active,
 .overlay-leave-active {
   transition: opacity 300ms ease;
+}
+.overlay-leave-active {
   transition-delay: 200ms;
 }
+.overlay-enter-from,
 .overlay-leave-to {
   opacity: 0;
 }

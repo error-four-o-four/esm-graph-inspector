@@ -3,12 +3,10 @@ import type { FolderLinkData } from '~~/shared/types/data.js';
 
 import { computed } from 'vue';
 
-import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '~/composables/layout.js';
-import useLayoutOffsets from '~/composables/useLayoutOffsets.js';
+import { offsetX, offsetY } from '~/composables/useTreeOffsets.js';
+import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '~/lib/tree-offsets.js';
 
 const { source, target } = defineProps<FolderLinkData>();
-
-const { offsetX, offsetY } = useLayoutOffsets();
 
 const deltaY = 0.5 * DEFAULT_NODE_HEIGHT;
 

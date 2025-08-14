@@ -3,15 +3,13 @@ import type { ModuleGraphLinkData } from '~~/shared/types/data.js';
 
 import { computed } from 'vue';
 
-import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '~/composables/layout.js';
-import useNodeOffsets from '~/composables/useNodeOffsets.js';
+import { fileOffsets } from '~/composables/useTreeDimensions.js';
+import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '~/lib/tree-offsets.js';
 
 const { id, source, target, bundle } = defineProps<ModuleGraphLinkData>();
 
-const { fileOffset } = useNodeOffsets();
-
-const sourceFileOffset = fileOffset[source.file.id];
-const targetFileOffset = fileOffset[target.file.id];
+const sourceFileOffset = fileOffsets[source.file.id];
+const targetFileOffset = fileOffsets[target.file.id];
 
 const marginX = 6;
 // different y for inbound outbound
@@ -55,6 +53,7 @@ const bundleX = computed(() => {
   ) + DEFAULT_NODE_WIDTH + bundleDelta; // inside of folder
 });
 
+// @todo computed
 function createPath() {
   // 1 => cw - 0 => ccw
   const sweepOutbound = directionXOutbound > 0

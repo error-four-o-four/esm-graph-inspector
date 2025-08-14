@@ -4,7 +4,7 @@ export const DEFAULT_NODE_HEIGHT = 32;
 export const PADDING_X = 0.5 * DEFAULT_NODE_WIDTH;
 export const PADDING_Y = 2 * DEFAULT_NODE_HEIGHT;
 
-export const SPACING_X = 0.375 * DEFAULT_NODE_WIDTH;
+export const SPACING_X = 0.75 * DEFAULT_NODE_WIDTH;
 export const SPACING_Y = 0.75 * DEFAULT_NODE_HEIGHT;
 
 // based on hierarchy depth index

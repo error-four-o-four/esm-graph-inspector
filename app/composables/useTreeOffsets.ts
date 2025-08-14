@@ -5,7 +5,7 @@ import type { ComputedRef, Ref } from 'vue';
 import { useTransition } from '@vueuse/core';
 import { ref } from 'vue';
 
-import { calcOffsetX, calcOffsetY } from '~/composables/layout.js';
+import { calcOffsetX, calcOffsetY } from '~/lib/tree-offsets.js';
 
 const transitionDefaults: UseTransitionOptions = {
   duration: 200,
@@ -15,16 +15,16 @@ const transitionDefaults: UseTransitionOptions = {
 // @todo
 // based on hierarchy depth index
 const offsetXBase: Ref<number>[] = [];
-const offsetX: ComputedRef<number>[] = [];
+export const offsetX: ComputedRef<number>[] = [];
 
 // based on hierarchy tree index
-const offsetYInitial: Record<FolderID, number> = {};
-const offsetYBase: Record<FolderID, Ref<number>> = {};
-const offsetY: Record<FolderID, ComputedRef<number>> = {};
+export const offsetYInitial: Record<FolderID, number> = {};
+export const offsetYBase: Record<FolderID, Ref<number>> = {};
+export const offsetY: Record<FolderID, ComputedRef<number>> = {};
 
 const offsetYUpdateQueue = new Map<FolderID, number>();
 
-function initLayoutOffsets(data: FileTreeData) {
+export function initTreeOffsets(data: FileTreeData) {
   for (let i = 0; i < data.levels.length; i += 1) {
     offsetXBase[i] = ref(calcOffsetX(i));
     offsetX[i] = useTransition(offsetXBase[i], transitionDefaults);
@@ -39,13 +39,13 @@ function initLayoutOffsets(data: FileTreeData) {
   }
 }
 
-function resetLayoutOffsets() {
+export function resetTreeOffsets() {
   for (const [folderId, offsetY] of Object.entries(offsetYInitial)) {
     offsetYBase[folderId].value = offsetY;
   }
 }
 
-function enqueueOffsetYUpdate(
+export function enqueueOffsetYUpdate(
   folderId: FolderID,
   deltaY: number,
 ) {
@@ -53,7 +53,7 @@ function enqueueOffsetYUpdate(
   offsetYUpdateQueue.set(folderId, y + deltaY);
 }
 
-function dequeueOffsetYUpdate() {
+export function dequeueOffsetYUpdate() {
   for (const [id, y] of offsetYUpdateQueue.entries()) {
     offsetYBase[id].value = y;
   }
@@ -61,15 +61,15 @@ function dequeueOffsetYUpdate() {
   offsetYUpdateQueue.clear();
 }
 
-export default function useLayoutOffsets() {
-  return {
-    offsetX,
-    offsetY,
-    offsetYBase,
-    offsetYInitial,
-    initLayoutOffsets,
-    resetLayoutOffsets,
-    enqueueOffsetYUpdate,
-    dequeueOffsetYUpdate,
-  };
-}
+// export default function useLayoutOffsets() {
+//   return {
+//     offsetX,
+//     offsetY,
+//     offsetYBase,
+//     offsetYInitial,
+//     initLayoutOffsets,
+//     resetLayoutOffsets,
+//     enqueueOffsetYUpdate,
+//     dequeueOffsetYUpdate,
+//   };
+// }
