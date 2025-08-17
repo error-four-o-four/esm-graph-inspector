@@ -27,5 +27,8 @@
     "strings": "on"
   },
 
-  "tailwindCSS.classAttributes": ["class", "ui"]
+  "tailwindCSS.classAttributes": [
+    "class",
+    "ui"
+  ]
 }
