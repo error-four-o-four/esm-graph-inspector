@@ -35,6 +35,11 @@ onMounted(() => {
 
   initTreeDimensions(folderRefs.value);
   updateTreeDimensions();
+
+  watch(
+    openedFolderIds,
+    () => updateTreeDimensions(),
+  );
   // console.log('mounted CONTAINER');
 });
 
@@ -67,7 +72,6 @@ watch(
 
       if (toggledIds.length) {
         updateToggledFolderOffsets(false, toggledIds, props.tree, next);
-        updateTreeDimensions();
       }
     }
   },
