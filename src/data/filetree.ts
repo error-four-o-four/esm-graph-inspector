@@ -7,8 +7,6 @@ import type {
   FileTreeData,
   FolderData,
   FolderID,
-  FolderLinkData,
-  FolderLinkID,
 } from '../../shared/types/data.js';
 
 // @todo include gitignore
@@ -49,34 +47,12 @@ export async function createFileTree(cwd: string): Promise<FileTreeData> {
     Object.entries(data.folders).sort((a, b) => a[1].index - b[1].index),
   );
 
-  const folderLinks: FolderLinkData[] = Object.values(folders)
-    .map((folder) => {
-      const sourceId = folder.id;
-
-      return folder.folderIds.map((targetId, index) => {
-        const id: FolderLinkID = `${sourceId}|${targetId}`;
-        const initial = index === 0;
-        // prevent overlapping lines
-        const source = index === 0 ? folder : folders[folder.folderIds[index - 1]];
-        const target = folders[targetId];
-
-        return {
-          id,
-          initial,
-          source,
-          target,
-        };
-      });
-    })
-    .flat();
-
   return {
     root,
     files: data.files,
     fileIds: Object.keys(data.files),
     folders,
     folderIds: Object.keys(folders),
-    folderLinks,
     levels: data.levels,
   };
 }

@@ -27,22 +27,12 @@ export type FolderData = BaseData & {
 
 export type FolderID = FolderData['id'];
 
-export type FolderLinkData = {
-  id: FolderLinkID;
-  initial: boolean;
-  source: FolderData;
-  target: FolderData;
-};
-
-export type FolderLinkID = `${FolderID}|${FolderID}`;
-
 export type FileTreeData = {
   root: FolderData;
   files: Record<FileID, FileData>;
   fileIds: FileID[];
   folders: Record<FolderID, FolderData>;
   folderIds: FolderID[];
-  folderLinks: FolderLinkData[];
   levels: FolderID[][];
 };
 

@@ -17,6 +17,11 @@ const props = defineProps<{
 const folderRefsKey = 'folders';
 const folderRefs = useTemplateRef<FolderInstance[]>(folderRefsKey);
 
+const foldersWithChildren = computed(() => props.tree.folderIds
+  .filter(folderId => props.tree.folders[folderId].folderIds.length > 0)
+  .map(folderId => props.tree.folders[folderId]),
+);
+
 // ###
 
 onBeforeMount(() => {
@@ -91,14 +96,10 @@ function handleToggledFolder(folderId: FolderID, value: boolean) {
       :width="dimensions.width"
       :height="dimensions.height"
     >
-      <!-- @todo draw one line from top to bottom => performance -->
       <TreeLink
-        v-for="link of tree.folderLinks"
-        :id="link.id"
-        :key="link.id"
-        :initial="link.initial"
-        :source="link.source"
-        :target="link.target"
+        v-for="folder of foldersWithChildren"
+        :key="folder.id"
+        :specs="folder"
       />
     </svg>
 
