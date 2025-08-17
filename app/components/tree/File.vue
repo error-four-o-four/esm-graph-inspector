@@ -3,10 +3,10 @@ import type { FileData } from '~~/shared/types/data.js';
 import type { PayloadRequest } from '~~/shared/types/payload.js';
 
 import { extensions } from '~~/shared/data.js';
-import { computed } from 'vue';
+import { computed, nextTick } from 'vue';
 
 import { requestPayload } from '~/composables/usePayload.js';
-import { graphData } from '~/state/data.js';
+import { appStateData, graphData } from '~/state/data.js';
 import { selectFile } from '~/state/selected.js';
 
 const { specs } = defineProps<{
@@ -15,13 +15,20 @@ const { specs } = defineProps<{
 
 const isDisabled = computed(() => !extensions.includes(specs.ext));
 
-function handleClick() {
+async function handleClick() {
+  // @todo clearify & add documentation
   if (!graphData.value) {
+    graphData.value = undefined;
+    appStateData.value = {
+      type: 'info',
+      message: `Requesting ${specs.id}`,
+    };
+    await nextTick(); // @todo doublecheck neccessity
     requestPayload<PayloadRequest>({ type: 'graph', file: specs.id });
+    return; // @todo select entry point by default
   }
 
   selectFile(specs);
-  // console.log(e);
 }
 </script>
 

@@ -22,6 +22,7 @@ let promisedModuleGraph: Promise<ModuleGraphData | undefined> | undefined;
 
 export function setUserEntryPoint(s: string) {
   promisedEntryPoint = undefined;
+  promisedModuleGraph = undefined;
   userEntryPoint = s;
 }
 

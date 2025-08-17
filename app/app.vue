@@ -1,50 +1,35 @@
 <script setup lang="ts">
-import { computed, watch, watchEffect } from 'vue';
+import { computed, nextTick, watch, watchEffect } from 'vue';
 
 import { requestPayload, socketStatus } from '~/composables/usePayload.js';
+import { addToast } from '~/composables/useToasts.js';
 import { isInitialized } from '~/composables/useTreeDimensions.js';
 import { isTransitioning } from '~/composables/useTreeOffsets.js';
-// import { addToast } from '~/composables/useToasts.js';
-import { errorData, graphData, treeData } from '~/state/data.js';
+import { appStateData, graphData, treeData } from '~/state/data.js';
 
 const isReady = computed(() => treeData.value && isInitialized.value);
 
 watchEffect(async () => {
   if (socketStatus.value !== 'OPEN') return;
 
-  if (errorData.value) {
-    // @todo
-    // differentiate errors
-    // notify via toast, when graph === undefined
-
-    // const { type, message } = errorData.value;
-    // addToast(type, message);
-
-    // if (payload.value.type === 'error') {
-    //   const code = payload.value.message ? 4000 : 1011;
-    //   const message = payload.value.message || 'An unexpected error occured!';
-    //   ws.close(code, message);
-    // }
-    return;
-  }
-
+  // @todo => composable
   if (isTransitioning.value) return;
 
   if (!treeData.value) {
     requestPayload({ type: 'tree' });
-    await nextTick();
+    await nextTick(); // @todo doublecheck neccessity
     return;
   }
 
-  if (treeData.value && !graphData.value) {
+  if (treeData.value && !graphData.value && !appStateData.value) {
     requestPayload({ type: 'graph' });
     await nextTick();
   }
 });
 
-// handle scrollIntoView *only* when app is loaded
 onMounted(() => {
-  const handler = watch(
+  // handle scrollIntoView *only* when app is initially loaded/mounted
+  const scrollHandler = watch(
     () => [isReady.value, graphData.value],
     () => {
       if (!isReady.value || !graphData.value) return;
@@ -55,7 +40,22 @@ onMounted(() => {
       const elt = document.getElementById(graphData.value.entry);
       elt && elt.scrollIntoView({ behavior: 'smooth' });
 
-      handler.stop();
+      scrollHandler.stop();
+    },
+  );
+
+  watch(
+    appStateData,
+    (value) => {
+      if (value) {
+        addToast(value.type, value.message);
+
+        // if (payload.value.type === 'error') {
+        //   const code = payload.value.message ? 4000 : 1011;
+        //   const message = payload.value.message || 'An unexpected error occured!';
+        //   ws.close(code, message);
+        // }
+      }
     },
   );
 });
@@ -64,7 +64,8 @@ onMounted(() => {
 // onUpdated(() => console.log('updated APP'));
 // onUnmounted(() => console.log('unmounted APP'));
 
-// @todo expand/collapse all btns
+// @todo feat: expand/collapse all btns
+// @todo feat: clear graph ?
 </script>
 
 <template>
@@ -79,9 +80,9 @@ onMounted(() => {
           v-if="!isReady"
           class="fixed top-0 left-0 flex items-center justify-center w-screen h-screen backdrop-blur-xs"
         >
-          <div v-if="errorData && errorData.type === 'error'">
+          <div v-if="appStateData && appStateData.type === 'error'">
             Oh no ... Something went wrong<br>
-            {{ errorData.message }}
+            {{ appStateData.message }}
           </div>
           <div v-else>
             Loading ...

@@ -90,3 +90,9 @@ export type ModuleGraphData = {
   links: ModuleGraphLinkData[];
   levels: string[][];
 };
+
+// ###
+
+export type ChangedData = {
+  path: string;
+};

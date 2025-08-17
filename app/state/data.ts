@@ -1,42 +1,93 @@
 import type { FileTreeData, ModuleGraphData } from '~~/shared/types/data.js';
-import type { ErrorPayload } from '~~/shared/types/payload';
 
 import { shallowRef, watch } from 'vue';
 
+import type { ToastProps } from '~/composables/useToasts.js';
+
 import { payload } from '~/composables/usePayload.js';
 
-export const errorData = shallowRef<ErrorPayload>();
-
 export const treeData = shallowRef<FileTreeData>();
-
 export const graphData = shallowRef<ModuleGraphData>();
+export const appStateData = shallowRef<ToastProps>();
 
-watch(payload, (value) => {
-  // console.log('watching payload');
-  // console.log(value);
+watch(
+  payload,
+  (value) => {
+    if (!value) return;
 
-  if (value && value.type === 'tree') {
-    treeData.value = value.data;
-    return;
-  }
+    switch (value.type) {
+      case 'tree':
+        appStateData.value = undefined;
+        treeData.value = value.data;
+        break;
 
-  if (value && value.type === 'tree-change') {
-    treeData.value = undefined;
-    graphData.value = undefined;
-    return;
-  }
+      case 'tree-change':
+        treeData.value = undefined;
+        graphData.value = undefined;
+        appStateData.value = {
+          type: 'info',
+          message: `${value.data.path} changed, clearing all data`,
+        };
+        break;
 
-  if (value && value.type === 'graph') {
-    graphData.value = value.data;
-    return;
-  }
+      case 'graph':
+        if (value.data === undefined) {
+          appStateData.value = Object.freeze({
+            type: 'warning',
+            message: 'Unable to determine entry point.',
+          });
+        } else {
+          appStateData.value = undefined;
+          graphData.value = value.data;
+        }
 
-  if (value && value.type === 'graph-change') {
-    graphData.value = undefined;
-    return;
-  }
+        break;
 
-  if (value && (value.type === 'error' || value.type === 'warning')) {
-    errorData.value = value;
-  }
-}, { immediate: true });
+      case 'graph-change':
+        graphData.value = undefined;
+        appStateData.value = {
+          type: 'info',
+          message: `${value.data.path} changed, clearing graph data`,
+        };
+        break;
+
+      case 'error':
+      case 'warning':
+        appStateData.value = value;
+        break;
+
+      default:
+        // @todo
+        console.warn('Unknown payload type:', value);
+    }
+  },
+  // @todo doublecheck neccessity
+  { immediate: true },
+);
+
+// watch(payload, (value) => {
+//   if (value && value.type === 'tree') {
+//     treeData.value = value.data;
+//     return;
+//   }
+
+//   if (value && value.type === 'tree-change') {
+//     treeData.value = undefined;
+//     graphData.value = undefined;
+//     return;
+//   }
+
+//   if (value && value.type === 'graph') {
+//     graphData.value = value.data;
+//     return;
+//   }
+
+//   if (value && value.type === 'graph-change') {
+//     graphData.value = undefined;
+//     return;
+//   }
+
+//   if (value && (value.type === 'error')) {
+//     errorData.value = value;
+//   }
+// }, { immediate: true });

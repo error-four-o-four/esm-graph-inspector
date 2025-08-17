@@ -13,37 +13,38 @@ const { send, status: socketStatus } = useWebSocket(url, {
   //   interval: 10 * 1000,
   // },
   autoReconnect: {
-    retries: 3,
+    retries: 2,
     delay: 1000,
     onFailed: () => {
-      payload.value = { type: 'error', message: 'Unable to create WebSocket connection.' };
+      const message = 'Unable to create WebSocket connection.';
+
+      console.warn('[ws] error', message);
+      payload.value = Object.freeze({ type: 'error', message });
     },
   },
   onError(_, e) {
-    console.warn('[ws] error', e.timeStamp);
     const message = (e instanceof ErrorEvent)
       ? e.message
       : 'A WebSocket Error occured.';
 
+    console.warn('[ws] error', e.timeStamp, message);
     payload.value = Object.freeze({ type: 'error', message });
   },
   onDisconnected() {
-    // console.log('[ws] disconnected', e.timeStamp);
-    // @todo differntiate payload.error & warning
-    // payload.value = Object.freeze({
-    //   type: 'warning',
-    //   message: 'Closed WebSocket conection.',
-    // });
+    payload.value = Object.freeze({
+      type: 'warning',
+      message: 'Closed WebSocket connection.',
+    });
   },
   onMessage(_, e) {
     const result: Payload = JSON.parse(e.data);
 
-    if (!result || result.type === 'warning' || result.type === 'error') {
-      // @todo
-      console.warn(result.message || 'An unexpected error occured!');
+    // @todo differntiate payload.error & warning
+    // if (result.type === 'warning' || result.type === 'error') {
+    if (result.type === 'error') {
+      const message = result.message || 'An unexpected error occured!';
+      console.warn('[ws]', result.type, e.timeStamp, message);
     }
-
-    console.log('[ws] message', e.timeStamp, result.type);
 
     // if ('data' in result) {
     //   console.log(`received ${result.type}`);

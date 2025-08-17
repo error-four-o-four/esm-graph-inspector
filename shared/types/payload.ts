@@ -1,9 +1,4 @@
-import type { FileTreeData, ModuleGraphData } from './data';
-
-export type GraphPayload = {
-  type: 'graph';
-  data?: ModuleGraphData;
-};
+import type { ChangedData, FileTreeData, ModuleGraphData } from './data';
 
 export type ErrorPayload = {
   type: 'error' | 'warning';
@@ -16,11 +11,14 @@ export type FileTreePayload = {
   data: FileTreeData;
 };
 
+export type GraphPayload = {
+  type: 'graph';
+  data?: ModuleGraphData;
+};
+
 export type ChangedPayload = {
   type: 'tree-change' | 'graph-change';
-  data: {
-    path: string;
-  };
+  data: ChangedData;
 };
 
 export type Payload = ErrorPayload | FileTreePayload | GraphPayload | ChangedPayload;
@@ -37,8 +35,3 @@ export type GraphDataRequest = {
 };
 
 export type PayloadRequest = FileTreeDataRequest | GraphDataRequest;
-
-// ###
-
-export type GenericPayload<K extends Payload['type'] = Payload['type']> = Extract<Payload, { type: K }>;
-export type GenericPayloadRequest<K extends PayloadRequest['type'] = PayloadRequest['type']> = Extract<PayloadRequest, { type: K }>;
