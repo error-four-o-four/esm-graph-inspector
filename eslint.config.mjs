@@ -31,7 +31,7 @@ export default withNuxt(antfu({
     'antfu/if-newline': 'off',
     'antfu/no-top-level-await': ['off'],
     'node/prefer-global/process': ['off'],
-    'node/no-process-env': ['warn'],
+    'node/no-process-env': ['off'],
     'perfectionist/sort-imports': ['error', {
       tsconfigRootDir: '.',
     }],
@@ -50,7 +50,7 @@ export default withNuxt(antfu({
 {
   files: ['src/**/*.ts'],
   rules: {
-    'no-console': 'off',
+    'no-console': 'warn',
     'node/no-process-env': 'off',
   },
 }));

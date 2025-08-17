@@ -5,6 +5,7 @@ export const PKG_NAME = pkg.name;
 
 export const PKG_VERSION = pkg.version;
 
+// @todo
 export const MARK = {
   CHECK: green('✔'),
   INFO: cyan('i'),

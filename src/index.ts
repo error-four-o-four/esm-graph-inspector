@@ -2,12 +2,17 @@ import { cli } from 'cleye';
 import open from 'open';
 
 import { PKG_NAME, PKG_VERSION } from './constants.js';
-import { createServer, getServerSettings } from './server.js';
-import { cyan } from './utils.js';
+import { initialize } from './data.js';
+import { createServer } from './server.js';
+import { cyan, hostLogger } from './utils.js';
 
 const argv = cli({
   name: PKG_NAME,
   version: PKG_VERSION,
+
+  parameters: [
+    '[entrypoint]',
+  ],
 
   flags: {
     host: {
@@ -21,15 +26,17 @@ const argv = cli({
   },
 });
 
-const { url, host, port } = await getServerSettings(argv.flags);
-const { server } = createServer();
+// @todo allow multiply entry points
+initialize({ entry: argv._.entrypoint });
+
+const { server, port, host, url } = await createServer(argv.flags);
 
 server.listen(port, host, async () => {
-  console.log(`Started ${cyan('ESM Graph Inspector')} ...`);
+  hostLogger(`Started ${cyan('ESM Graph Inspector')} ...`);
 
   if (process.env.NODE_ENV !== 'development') {
     await open(url);
   } else {
-    console.log(`Listening on ${cyan(url)} ...`);
+    hostLogger(`Listening on ${cyan(url)} ...`);
   }
 });

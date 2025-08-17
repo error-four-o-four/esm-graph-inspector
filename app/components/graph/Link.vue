@@ -1,99 +1,188 @@
 <script setup lang="ts">
+import type { ModuleGraphData, ModuleGraphLinkData } from '~~/shared/types/data.js';
+
 import { computed } from 'vue';
 
-import type { GraphLinkData } from '~/types/tree.js';
+import { useFileOffsets } from '~/composables/useTreeDimensions.js';
+import {
+  BUNDLE_SPACING_X,
+  DEFAULT_NODE_HEIGHT,
+  DEFAULT_NODE_WIDTH,
+  FOLDER_SPACING_X,
+  GRAPH_LINK_MARGIN_X,
+} from '~/lib/tree-offsets.js';
+import { selectedFile } from '~/state/selected.js';
 
-import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '~/composables/layout.js';
-import useNodeOffsets from '~/composables/useNodeOffsets.js';
+type Props = ModuleGraphLinkData & {
+  levels: ModuleGraphData['levels'];
+  selected?: boolean;
+};
 
-const { id, source, target, bundle } = defineProps<GraphLinkData>();
+const props = defineProps<Props>();
 
-const { fileOffset } = useNodeOffsets();
-
-const sourceFileOffset = fileOffset[source.file.id];
-const targetFileOffset = fileOffset[target.file.id];
-
-const marginX = 6;
-// different y for inbound outbound
-const marginInboundY = -0.2 * DEFAULT_NODE_HEIGHT;
-const marginOutboundY = 0.05 * DEFAULT_NODE_HEIGHT;
-
-const directionXOutbound = source.folder.depth > target.folder.depth ? -1 : 1; // to left : right
-const directionXInbound = source.folder.depth >= target.folder.depth ? -1 : 1;
+const sourceFileOffset = useFileOffsets(props.source.file);
+const targetFileOffset = useFileOffsets(props.target.file);
 
 // source coords
 const sourceX = computed(() => {
-  return sourceFileOffset.x.value + (
-    (directionXOutbound > 0)
-      ? sourceFileOffset.width + marginX
-      : -marginX
-  );
+  // choose left or right side depending on direction x
+  const value = (props.direction.x >= 0)
+    ? sourceFileOffset.width + GRAPH_LINK_MARGIN_X
+    : -GRAPH_LINK_MARGIN_X;
+
+  return sourceFileOffset.x.value + value;
 });
 
-const sourceY = computed(() => sourceFileOffset.y.value + marginOutboundY);
+const sourceY = computed(() => {
+  // different y for source outbound
+  // @todo doublecheck
+  const value = (props.source.hasInbound)
+    ? 0.05 * DEFAULT_NODE_HEIGHT
+    : -0.1 * DEFAULT_NODE_HEIGHT;
+
+  return sourceFileOffset.y.value + value;
+});
 
 // target coords
 const targetX = computed(() => {
-  return targetFileOffset.x.value + (
-    (directionXInbound > 0)
-      ? -marginX
-      : targetFileOffset.width + marginX
-  );
+  // choose left or right side depending on height && direction x
+  const value = (props.direction.x <= 0)
+    ? targetFileOffset.width + GRAPH_LINK_MARGIN_X
+    : -GRAPH_LINK_MARGIN_X + 3; // consider source circle radius
+
+  return targetFileOffset.x.value + value;
 });
 
-const targetY = computed(() => targetFileOffset.y.value + marginInboundY);
+const targetY = computed(() => {
+  // different y for target inbound
+  const value = (props.target.hasOutbound)
+    ? -0.2 * DEFAULT_NODE_HEIGHT
+    : -0.1 * DEFAULT_NODE_HEIGHT;
 
-const directionY = sourceY.value > targetY.value ? -1 : 1; // top top : bottom
-const curveRadius = Math.min(0.5 * Math.abs(targetY.value - sourceY.value), 0.5 * DEFAULT_NODE_HEIGHT);
-
-// @todo nested level > 1
-const bundleDelta = 6 * bundle;
-const bundleX = computed(() => {
-  return (directionXOutbound > 0
-    ? sourceFileOffset.x.value
-    : targetFileOffset.x.value
-  ) + DEFAULT_NODE_WIDTH + bundleDelta; // inside of folder
+  return targetFileOffset.y.value + value;
 });
 
-function createPath() {
+const pathLink = computed(() => {
+  const bundleX = calcDeltaX();
+  const deltaY = targetY.value - sourceY.value;
+  const curveRadius = Math.min(0.5 * Math.abs(deltaY), 0.25 * DEFAULT_NODE_HEIGHT);
+
+  const dirXOutbound = props.direction.x >= 0 ? 1 : -1;
+  const dirXInbound = props.direction.x > 0 ? 1 : -1;
+  const dirY = Math.sign(deltaY);
+
   // 1 => cw - 0 => ccw
-  const sweepOutbound = directionXOutbound > 0
-    ? directionY > 0 ? 1 : 0
-    : directionY > 0 ? 0 : 1;
+  // const sweepOutbound = props.direction.x >= 0
+  //   ? deltaY > 0 ? 1 : 0
+  //   : deltaY > 0 ? 0 : 1;
 
-  const sweepInbound = directionXInbound > 0
-    ? directionY > 0 ? 0 : 1
-    : directionY > 0 ? 1 : 0;
+  // const sweepInbound = props.direction.x > 0
+  //   ? deltaY > 0 ? 0 : 1
+  //   : deltaY > 0 ? 1 : 0;
 
   return [
     `M${sourceX.value},${sourceY.value}`,
-    `L${bundleX.value - directionXOutbound * curveRadius},${sourceY.value}`,
-    `A${curveRadius},${curveRadius} 0 0 ${sweepOutbound} ${bundleX.value},${sourceY.value + directionY * curveRadius}`,
-    `L${bundleX.value},${targetY.value - directionY * curveRadius}`,
-    `A${curveRadius},${curveRadius} 0 0 ${sweepInbound} ${bundleX.value + directionXInbound * curveRadius},${targetY.value}`,
+    `L${bundleX - dirXOutbound * curveRadius},${sourceY.value}`,
+    `L${bundleX},${sourceY.value + dirY * curveRadius}`,
+    // `A${curveRadius},${curveRadius} 0 0 ${sweepOutbound} ${deltaX},${sourceY.value + deltaY * curveRadius}`,
+    `L${bundleX},${targetY.value - dirY * curveRadius}`,
+    // `A${curveRadius},${curveRadius} 0 0 ${sweepInbound} ${deltaX + dirX * curveRadius},${targetY.value}`,
+    `${bundleX + dirXInbound * curveRadius},${targetY.value}`,
     `L${targetX.value},${targetY.value}`,
   ].join('\n');
+});
+
+function calcDeltaX() {
+  // @todo props.height > 1 (!)
+  const y = DEFAULT_NODE_WIDTH + 0.25 * FOLDER_SPACING_X + (
+    (props.direction.x >= 0)
+      ? sourceFileOffset.x.value
+      : targetFileOffset.x.value
+  );
+
+  const depth = (props.direction.x >= 0)
+    ? props.source.folder.depth
+    : props.target.folder.depth;
+
+  const index = props.levels[depth].indexOf(props.bundle.id);
+
+  if (index < 0) {
+    console.warn('Nope', props.id, props.folderIds);
+    return y;
+  }
+
+  return y + index * BUNDLE_SPACING_X;
 }
 
-function createArrowPath() {
+const pathArrow = computed(() => {
   const size = 3;
+  const dir = props.direction.x > 0 ? 1 : -1;
 
   return `
-  M${targetX.value - directionXInbound * size}, ${targetY.value - size}
+  M${targetX.value - dir * size}, ${targetY.value - size}
   L${targetX.value}, ${targetY.value}
-  L${targetX.value - directionXInbound * size}, ${targetY.value + size}
+  L${targetX.value - dir * size}, ${targetY.value + size}
   `;
-}
+});
 
-const color = `hsl(${60 + (bundle * 30) % 360}, 40%, 40%)`;
+// function createPath() {
+//   // 1 => cw - 0 => ccw
+//   const sweepOutbound = directionXOutbound > 0
+//     ? deltaY.value > 0 ? 1 : 0
+//     : deltaY.value > 0 ? 0 : 1;
+
+//   const sweepInbound = directionXInbound > 0
+//     ? deltaY.value > 0 ? 0 : 1
+//     : deltaY.value > 0 ? 1 : 0;
+
+//   return [
+//     `M${sourceX.value},${sourceY.value}`,
+//     `L${bundleX.value - directionXOutbound * curveRadius},${sourceY.value}`,
+//     `A${curveRadius},${curveRadius} 0 0 ${sweepOutbound} ${bundleX.value},${sourceY.value + deltaY.value * curveRadius}`,
+//     `L${bundleX.value},${targetY.value - deltaY.value * curveRadius}`,
+//     `A${curveRadius},${curveRadius} 0 0 ${sweepInbound} ${bundleX.value + directionXInbound * curveRadius},${targetY.value}`,
+//     `L${targetX.value},${targetY.value}`,
+//   ].join('\n');
+// }
+
+const color = computed(() => {
+  // @todo meh
+  // selectedFile vs props.selected
+  const hue = 60 + (props.bundle.index * 30) % 360;
+
+  if (!selectedFile.value) return `hsl(${hue}, 40%, 40%)`;
+
+  if (selectedFile.value.id === props.source.file.id) return `hsl(330, 100%, 60%)`;
+
+  if (selectedFile.value.id === props.target.file.id) return `hsl(180, 100%, 60%)`;
+
+  return `hsl(${hue}, 10%, 40%)`;
+});
 </script>
 
 <template>
-  <g :id="id" :stroke="color" :fill="color">
-    <circle :cx="sourceX + 2" :cy="sourceY" r="2" stroke="none" />
-    <path :d="createPath()" fill="none" />
+  <g
+    :id="id"
+    :stroke="color"
+    :stroke-width="props.selected ? 1 : 2"
+    :fill="color"
+    class="relative"
+    style="transition: stroke 300ms ease;"
+  >
+    <circle :cx="sourceX + 2" :cy="sourceY" r="3" stroke="none" />
+    <path
+      :d="pathLink"
+      fill="none"
+      :stroke-dasharray="props.selected ? '' : '8 3'"
+    />
     <!-- @todo overlapping paths (!) -->
-    <path :d="createArrowPath()" fill="none" />
+    <path
+      :d="pathArrow"
+      fill="none"
+      stroke-width="2"
+      stroke-linecap="butt"
+      stroke-linejoin="round"
+    />
   </g>
   <!-- <text :x="sourceX" :y="sourceY" fill="#ccc" stroke="none" class="text-xs">
     {{ specs.sourceFileId }}

@@ -1,4 +1,4 @@
-import type { Extension } from './types.js';
+import type { Extension } from './types/data.js';
 
 export const endpointWs = '/api/socket';
 

@@ -2,64 +2,23 @@ import { readdir } from 'node:fs/promises';
 import { parse } from 'node:path';
 
 import type {
-  ErrorPayload,
   Extension,
   FileID,
   FileTreeData,
-  FileTreePayload,
   FolderData,
   FolderID,
-  FolderLinkData,
-  FolderLinkID,
-} from '../../shared/types.js';
-
-// @todo
-// implement chokidar/watcher
-
-// @todo
-// For very large file trees, this approach may be slow or memory-intensive. Consider streaming or limiting depth if needed
-
-const cachedFiletree: Map<string, FileTreePayload['data']> = new Map();
+} from '../../shared/types/data.js';
 
 // @todo include gitignore
-const ignore: string[] = ['node_modules', 'coverage', 'dist'];
-
-export async function createFiletreePayload(): Promise<FileTreePayload | ErrorPayload> {
-  const cwd = process.cwd();
-
-  try {
-    if (!cachedFiletree.has(cwd)) {
-      cachedFiletree.set(cwd, await createFiletree(cwd));
-    }
-
-    const filetree = cachedFiletree.get(cwd);
-
-    if (filetree === undefined) throw new Error('Unable to create filetree!');
-
-    return {
-      type: 'filetree',
-      data: filetree,
-    };
-  } catch (catched) {
-    const error = (catched instanceof Error)
-      ? catched
-      : new Error('An unexpected error occurred!');
-
-    console.warn(error);
-
-    return {
-      type: 'error',
-      error,
-      message: error.message,
-    };
-  }
-}
+export const ignored: string[] = ['node_modules', 'coverage', 'dist'];
 
 type AccumulatedData = Pick<FileTreeData, 'files' | 'folders' | 'levels'> & {
   index: number;
 };
 
-async function createFiletree(cwd: string): Promise<FileTreeData> {
+// @todo
+// For very large file trees, this approach may be slow or memory-intensive. Consider streaming or limiting depth if needed
+export async function createFileTree(cwd: string): Promise<FileTreeData> {
   const id = './';
 
   const data: AccumulatedData = {
@@ -69,7 +28,7 @@ async function createFiletree(cwd: string): Promise<FileTreeData> {
     levels: [[id]],
   };
 
-  const { fileIds, folderIds } = await walkFiletree(id, data, 0);
+  const { fileIds, folderIds } = await walkFileTree(id, data, 0);
 
   const root: FolderData = {
     id,
@@ -88,39 +47,17 @@ async function createFiletree(cwd: string): Promise<FileTreeData> {
     Object.entries(data.folders).sort((a, b) => a[1].index - b[1].index),
   );
 
-  const folderLinks: FolderLinkData[] = Object.values(folders)
-    .map((folder) => {
-      const sourceId = folder.id;
-
-      return folder.folderIds.map((targetId, index) => {
-        const id: FolderLinkID = `${sourceId}|${targetId}`;
-        const initial = index === 0;
-        // prevent overlapping lines
-        const source = index === 0 ? folder : folders[folder.folderIds[index - 1]];
-        const target = folders[targetId];
-
-        return {
-          id,
-          initial,
-          source,
-          target,
-        };
-      });
-    })
-    .flat();
-
   return {
     root,
     files: data.files,
     fileIds: Object.keys(data.files),
     folders,
     folderIds: Object.keys(folders),
-    folderLinks,
     levels: data.levels,
   };
 }
 
-async function walkFiletree(
+async function walkFileTree(
   path: string,
   data: AccumulatedData,
   prev: number,
@@ -173,9 +110,9 @@ async function walkFiletree(
     const level = data.levels[depth].length;
     data.levels[depth].push(id);
 
-    const { fileIds, folderIds } = ignore.includes(name)
+    const { fileIds, folderIds } = ignored.includes(name)
       ? { fileIds: [], folderIds: [] } // list ignored as empty folder
-      : await walkFiletree(id, data, depth);
+      : await walkFileTree(id, data, depth);
 
     data.folders[id] = {
       id,

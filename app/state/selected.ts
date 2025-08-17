@@ -1,4 +1,4 @@
-import type { FileData } from '~~/shared/types';
+import type { FileData } from '~~/shared/types/data';
 
 import { shallowRef } from 'vue';
 

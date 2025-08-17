@@ -1,28 +1,34 @@
 <script setup lang="ts">
-import type { FileData, PayloadRequest } from '~~/shared/types.js';
+import type { FileData } from '~~/shared/types/data.js';
+import type { PayloadRequest } from '~~/shared/types/payload.js';
 
 import { extensions } from '~~/shared/data.js';
-import { computed } from 'vue';
+import { computed, nextTick } from 'vue';
 
-import { usePayload } from '~/composables/usePayload.js';
-import { graphData } from '~/state/data.js';
-import { selectFile } from '~/state/selected.js';
+import { requestPayload } from '~/composables/usePayload.js';
+import { appStateData, graphData } from '~/state/data.js';
+import { selectedFile, selectFile } from '~/state/selected.js';
 
 const { specs } = defineProps<{
   specs: FileData;
 }>();
 
-const { requestPayload } = usePayload();
-
 const isDisabled = computed(() => !extensions.includes(specs.ext));
 
-function handleClick() {
+async function handleClick() {
+  // @todo clearify & add documentation
   if (!graphData.value) {
+    graphData.value = undefined;
+    appStateData.value = {
+      type: 'info',
+      message: `Requesting ${specs.id}`,
+    };
+    await nextTick(); // @todo doublecheck neccessity
     requestPayload<PayloadRequest>({ type: 'graph', file: specs.id });
+    return; // @todo select entry point by default
   }
 
   selectFile(specs);
-  // console.log(e);
 }
 </script>
 
@@ -34,7 +40,7 @@ function handleClick() {
       variant="ghost"
       size="xs"
       class="pb-1.5"
-      :class="{ 'text-neutral-500': isDisabled }"
+      :class="{ 'text-neutral-500': isDisabled, 'bg-cyan-700': selectedFile?.id === specs.id }"
       :disabled="isDisabled"
       @click="handleClick"
     >

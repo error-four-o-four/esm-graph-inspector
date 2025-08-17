@@ -1,40 +1,45 @@
 <script setup lang="ts">
-import type { FileTreeData } from '~~/shared/types.js';
+import type { FileTreeData, FolderID } from '~~/shared/types/data.js';
 
-import { ref } from 'vue';
+import { useTemplateRef, watch } from 'vue';
 
-import type { LayoutInstance } from '~/types/tree.js';
+import type { FolderInstance } from '~/types/components.js';
 
-import useContainerDimensions from '~/composables/useContainerDimensions.js';
-import useLayoutOffsets from '~/composables/useLayoutOffsets.js';
-import useNodeOffsets from '~/composables/useNodeOffsets.js';
+import { dimensions, initTreeDimensions, isInitialized, updateTreeDimensions } from '~/composables/useTreeDimensions.js';
+import { addFolderIds, clearFolderIds } from '~/composables/useTreeFolders.js';
+import { initTreeOffsets, updateToggledFolderOffsets } from '~/composables/useTreeOffsets.js';
+import { graphData } from '~/state/data.js';
+import { selectedFile } from '~/state/selected.js';
 
 const props = defineProps<{
   tree: FileTreeData;
 }>();
 
-const isInitiated = ref(false);
+const folderRefsKey = 'folders';
+const folderRefs = useTemplateRef<FolderInstance[]>(folderRefsKey);
 
-defineExpose({ isInitiated });
+const foldersWithChildren = computed(() => props.tree.folderIds
+  .filter(folderId => props.tree.folders[folderId].folderIds.length > 0)
+  .map(folderId => props.tree.folders[folderId]),
+);
 
-const { initContainerDimensions, width, height } = useContainerDimensions();
-const { initLayoutOffsets, resetLayoutOffsets } = useLayoutOffsets();
-const { initNodeOffsets } = useNodeOffsets();
-
-const layoutRef = ref<LayoutInstance | null>(null);
+// ###
 
 onBeforeMount(() => {
-  initLayoutOffsets(props.tree);
+  initTreeOffsets(props.tree);
   // console.log('before mounted CONTAINER');
 });
 
 onMounted(() => {
-  if (!layoutRef.value || !layoutRef.value.folderRefs) throw new Error('Gnaaa!');
+  if (!folderRefs.value) throw new Error('Gnaaa!');
 
-  initNodeOffsets(layoutRef.value.folderRefs);
-  initContainerDimensions(props.tree);
+  initTreeDimensions(folderRefs.value);
+  updateTreeDimensions();
 
-  isInitiated.value = true;
+  watch(
+    openedFolderIds,
+    () => updateTreeDimensions(),
+  );
   // console.log('mounted CONTAINER');
 });
 
@@ -43,24 +48,134 @@ onUpdated(() => {
 });
 
 onUnmounted(() => {
-  resetLayoutOffsets();
+  clearFolderIds();
+  // @todo on 'tree-change'
+  // TypeError: can't access property "value", offsetsXBase[level] is undefined
+  // resetTreeOffsets();
+  isInitialized.value = false;
   // console.log('unmounted CONTAINER');
 });
+
+// ###
+
+watch(
+  graphData,
+  (next) => {
+    if (next) {
+      /**
+       * @note
+       * graphData will be defined after offets are initiialized
+       * executed when an update of the module graph was triggered
+       * @todo doublecheck correct offsets when rerendered
+       */
+      const toggledIds = addFolderIds(...next.folderIds);
+
+      if (toggledIds.length) {
+        updateToggledFolderOffsets(false, toggledIds, props.tree, next);
+      }
+    }
+  },
+  {
+    immediate: true,
+  },
+);
+
+// ###
+
+function handleToggledFolder(folderId: FolderID, value: boolean) {
+  if (value) {
+    addFolderIds(folderId);
+  } else {
+    deleteFolderIds(folderId);
+  }
+  updateToggledFolderOffsets(!value, [folderId], props.tree);
+}
+
+// ###
 </script>
 
 <template>
-  <Draggable :width="width" :height="height">
-    <TreeLayout
-      ref="layoutRef"
-      :files="tree.files"
-      :folders="tree.folders"
-      :folder-links="tree.folderLinks"
-      :levels="tree.levels"
+  <Draggable :width="dimensions.width" :height="dimensions.height">
+    <svg
+      class="pointer-events-none absolute left-0 top-0 stroke-1 stroke-neutral-700 fill-none"
+      :width="dimensions.width"
+      :height="dimensions.height"
+    >
+      <TreeLink
+        v-for="folder of foldersWithChildren"
+        :key="folder.id"
+        :specs="folder"
+      />
+    </svg>
+
+    <TreeFolder
+      v-for="folder of tree.folders"
+      :id="folder.id"
+      :ref="folderRefsKey"
+      :key="folder.id"
+      :name="folder.name"
+      :parent="folder.parent"
+      :index="folder.index"
+      :level="folder.level"
+      :depth="folder.depth"
+      :files="folder.fileIds.map(fileId => tree.files[fileId])"
+      @toggle="handleToggledFolder"
     />
-    <GraphCanvas
-      v-if="isInitiated"
-      :width="width"
-      :height="height"
-    />
+    <Transition name="graph">
+      <div v-if="isInitialized && graphData">
+        <svg
+
+          class="pointer-events-none absolute left-0 top-0 z-10 stroke-2"
+          :width="dimensions.width"
+          :height="dimensions.height"
+        >
+          <!-- @todo refactor -->
+          <GraphLink
+            v-for="link of graphData.links"
+            :id="link.id"
+            :key="link.id"
+            :bundle="link.bundle"
+            :levels="graphData.levels"
+            :direction="link.direction"
+            :folder-ids="link.folderIds"
+            :height="link.height"
+            :source="link.source"
+            :target="link.target"
+          />
+        </svg>
+        <svg
+          v-if="selectedFile"
+          class="pointer-events-none absolute left-0 top-0 z-20 stroke-2"
+          :width="dimensions.width"
+          :height="dimensions.height"
+        >
+          <!-- @todo refactor -->
+          <GraphLink
+            v-for="link of graphData.links.filter(link => link.source.file.id === selectedFile?.id || link.target.file.id === selectedFile?.id)"
+            :id="link.id"
+            :key="link.id"
+            :bundle="link.bundle"
+            :levels="graphData.levels"
+            :direction="link.direction"
+            :folder-ids="link.folderIds"
+            :height="link.height"
+            :source="link.source"
+            :target="link.target"
+            :selected="true"
+          />
+        </svg>
+      </div>
+    </Transition>
   </Draggable>
 </template>
+
+<style>
+.graph-enter-active,
+.graph-leave-active {
+  transition: opacity 300ms ease;
+}
+.graph-enter-from,
+.graph-leave-to {
+  opacity: 0;
+}
+</style>

@@ -1,125 +1,93 @@
-import type {
-  ErrorPayload,
-  FileID,
-  FileTreeData,
-  FolderID,
-  GraphData,
-} from '~~/shared/types.js';
+import type { FileTreeData, ModuleGraphData } from '~~/shared/types/data.js';
 
 import { shallowRef, watch } from 'vue';
 
-import type { GraphLinkData } from '~/types/tree';
+import type { ToastProps } from '~/composables/useToasts.js';
 
-import { usePayload } from '~/composables/usePayload.js';
+import { payload } from '~/composables/usePayload.js';
 
-const { payload } = usePayload();
+export const treeData = shallowRef<FileTreeData>();
+export const graphData = shallowRef<ModuleGraphData>();
+export const appStateData = shallowRef<ToastProps>();
 
-export const errorData = shallowRef<ErrorPayload>();
+watch(
+  payload,
+  (value) => {
+    if (!value) return;
 
-export const filetreeData = shallowRef<FileTreeData>();
+    switch (value.type) {
+      case 'tree':
+        appStateData.value = undefined;
+        treeData.value = value.data;
+        break;
 
-export const graphData = shallowRef<GraphData>();
+      case 'tree-change':
+        treeData.value = undefined;
+        graphData.value = undefined;
+        appStateData.value = {
+          type: 'info',
+          message: `${value.data.path} changed, clearing all data`,
+        };
+        break;
 
-// @todo => precompute server side
-export const graphFolderIds = shallowRef<Set<FolderID>>(new Set());
-export const graphFileIds = shallowRef<Set<FileID>>(new Set());
-export const graphLinkData = shallowRef<GraphLinkData[]>([]);
+      case 'graph':
+        if (value.data === undefined) {
+          appStateData.value = Object.freeze({
+            type: 'warning',
+            message: 'Unable to determine entry point.',
+          });
+        } else {
+          appStateData.value = undefined;
+          graphData.value = value.data;
+        }
 
-watch(payload, (value) => {
-  // console.log('watching payload');
-  // console.log(value);
+        break;
 
-  if (value && value.type === 'filetree') {
-    filetreeData.value = value.data;
-    return;
-  }
+      case 'graph-change':
+        graphData.value = undefined;
+        appStateData.value = {
+          type: 'info',
+          message: `${value.data.path} changed, clearing graph data`,
+        };
+        break;
 
-  if (value && value.type === 'graph') {
-    graphData.value = value.data;
+      case 'error':
+      case 'warning':
+        appStateData.value = value;
+        break;
 
-    // @todo
-    if (!filetreeData.value) throw new Error('Nope app/state/data.ts');
-
-    const { files, folders } = filetreeData.value;
-    const { links } = graphData.value;
-
-    graphFolderIds.value = createGraphFolderIds(files, links);
-    graphFileIds.value = createGraphFileIds(links);
-    graphLinkData.value = createGraphLinkData(files, folders, links);
-    // @todo clear/set opened folder ids
-    return;
-  }
-
-  if (value && (value.type === 'error' || value.type === 'warning')) {
-    errorData.value = value;
-  }
-}, { immediate: true });
-
-// @todo => server src/payload/graph.ts
-function createGraphFolderIds(
-  files: FileTreeData['files'],
-  links: GraphData['links'],
-) {
-  const result = new Set<FolderID>();
-
-  for (const [targetId, sources] of Object.entries(links)) {
-    result.add(files[targetId].parent);
-    for (const sourceId of sources) {
-      result.add(files[sourceId].parent);
+      default:
+        // @todo
+        console.warn('Unknown payload type:', value);
     }
-  }
+  },
+  // @todo doublecheck neccessity
+  { immediate: true },
+);
 
-  return result;
-}
+// watch(payload, (value) => {
+//   if (value && value.type === 'tree') {
+//     treeData.value = value.data;
+//     return;
+//   }
 
-function createGraphFileIds(links: GraphData['links']) {
-  const result = new Set<FileID>();
+//   if (value && value.type === 'tree-change') {
+//     treeData.value = undefined;
+//     graphData.value = undefined;
+//     return;
+//   }
 
-  for (const [targetId, source] of Object.entries(links)) {
-    result.add(targetId);
-    for (const sourceId of source) {
-      result.add(sourceId);
-    }
-  }
+//   if (value && value.type === 'graph') {
+//     graphData.value = value.data;
+//     return;
+//   }
 
-  return result;
-};
+//   if (value && value.type === 'graph-change') {
+//     graphData.value = undefined;
+//     return;
+//   }
 
-function createGraphLinkData(
-  files: FileTreeData['files'],
-  folders: FileTreeData['folders'],
-  links: GraphData['links'],
-) {
-  const result: GraphLinkData[] = [];
-  const entries = Object.entries(links);
-
-  for (let i = 0; i < entries.length; i += 1) {
-    const [targetId, sources] = entries[i];
-    const targetFile = files[targetId];
-    const targetFolder = folders[targetFile.parent];
-
-    for (const sourceId of sources) {
-      const sourceFile = files[sourceId];
-      const sourceFolder = folders[sourceFile.parent];
-
-      // @todo inbound outbound
-      // @todo precompute bundles per level
-      // @todo use separate bundle index per level
-      // @todo bundle depth
-      result.push({
-        id: `${sourceId}|${targetId}`,
-        bundle: i,
-        source: {
-          file: sourceFile,
-          folder: sourceFolder,
-        },
-        target: {
-          file: targetFile,
-          folder: targetFolder,
-        },
-      });
-    }
-  }
-
-  return result;
-}
+//   if (value && (value.type === 'error')) {
+//     errorData.value = value;
+//   }
+// }, { immediate: true });

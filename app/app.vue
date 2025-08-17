@@ -1,63 +1,96 @@
 <script setup lang="ts">
-import { computed, ref, watchEffect } from 'vue';
+import { computed, nextTick, watch, watchEffect } from 'vue';
 
-import { usePayload } from '~/composables/usePayload.js';
-import { addToast } from '~/composables/useToast.js';
-import { errorData, filetreeData, graphData } from '~/state/data.js';
+import { requestPayload, socketStatus } from '~/composables/usePayload.js';
+import { addToast } from '~/composables/useToasts.js';
+import { isInitialized } from '~/composables/useTreeDimensions.js';
+import { isTransitioning } from '~/composables/useTreeOffsets.js';
+import { appStateData, graphData, treeData } from '~/state/data.js';
 
-import type Container from './components/graph/Container.vue';
+import { selectedFile, selectFile } from './state/selected.js';
 
-const { requestPayload, status } = usePayload();
-
-const containerRef = ref<InstanceType<typeof Container> | null>();
-const isReady = computed(() => filetreeData.value && containerRef.value && containerRef.value.isInitiated);
+const isReady = computed(() => treeData.value && isInitialized.value);
 
 watchEffect(async () => {
-  if (status.value !== 'OPEN') return;
+  if (socketStatus.value !== 'OPEN') return;
 
-  if (errorData.value) {
-    const { type, message, error } = errorData.value;
-    error && console.warn(error);
-    addToast(type, message);
+  // @todo => composable
+  if (isTransitioning.value) return;
+
+  if (!treeData.value) {
+    requestPayload({ type: 'tree' });
+    await nextTick(); // @todo doublecheck neccessity
     return;
   }
 
-  if (!filetreeData.value) {
-    requestPayload({ type: 'tree' });
-    await nextTick();
-  }
-
-  if (filetreeData.value && !graphData.value) {
+  if (treeData.value && !graphData.value && !appStateData.value) {
     requestPayload({ type: 'graph' });
     await nextTick();
+    return;
   }
+
+  if (graphData.value && !selectedFile.value) {
+    const entry = treeData.value.files[graphData.value.entry];
+    selectFile(entry);
+  }
+});
+
+onMounted(() => {
+  // handle scrollIntoView *only* when app is initially loaded/mounted
+  const scrollHandler = watch(
+    () => [isReady.value, graphData.value],
+    () => {
+      if (!isReady.value || !graphData.value) return;
+
+      // @todo calculate min max graph svg and center/zoom
+      // @todo select entry point by default
+
+      const elt = document.getElementById(graphData.value.entry);
+      elt && elt.scrollIntoView({ behavior: 'smooth' });
+
+      scrollHandler.stop();
+    },
+  );
+
+  watch(
+    appStateData,
+    (value) => {
+      if (value) {
+        addToast(value.type, value.message);
+
+        // if (payload.value.type === 'error') {
+        //   const code = payload.value.message ? 4000 : 1011;
+        //   const message = payload.value.message || 'An unexpected error occured!';
+        //   ws.close(code, message);
+        // }
+      }
+    },
+  );
 });
 
 // onMounted(() => console.log('mounted APP'));
 // onUpdated(() => console.log('updated APP'));
 // onUnmounted(() => console.log('unmounted APP'));
 
-// @todo scroll entry into view
-// @todo expand/collapse all btns
-// @todo - precompute bundles per level and adjust horizontal spacing/offset of a folder
+// @todo feat: expand/collapse all btns
+// @todo feat: clear graph ?
 </script>
 
 <template>
   <UApp>
     <main class="relative">
       <GraphContainer
-        v-if="filetreeData"
-        ref="containerRef"
-        :tree="filetreeData"
+        v-if="treeData"
+        :tree="treeData"
       />
       <Transition name="overlay">
         <div
           v-if="!isReady"
           class="fixed top-0 left-0 flex items-center justify-center w-screen h-screen backdrop-blur-xs"
         >
-          <div v-if="errorData && errorData.type === 'error'">
+          <div v-if="appStateData && appStateData.type === 'error'">
             Oh no ... Something went wrong<br>
-            {{ errorData.message }}
+            {{ appStateData.message }}
           </div>
           <div v-else>
             Loading ...
@@ -71,10 +104,14 @@ watchEffect(async () => {
 </template>
 
 <style>
+.overlay-enter-active,
 .overlay-leave-active {
   transition: opacity 300ms ease;
+}
+.overlay-leave-active {
   transition-delay: 200ms;
 }
+.overlay-enter-from,
 .overlay-leave-to {
   opacity: 0;
 }
