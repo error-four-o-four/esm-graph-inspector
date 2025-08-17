@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import type { FileTreeData } from '~~/shared/types/data.js';
+import type { FileTreeData, FolderID } from '~~/shared/types/data.js';
 
-import { useTemplateRef } from 'vue';
+import { useTemplateRef, watch } from 'vue';
 
 import type { FolderInstance } from '~/types/components.js';
 
-import { dimensions, initTreeDimensions, isInitialized } from '~/composables/useTreeDimensions.js';
-import { initTreeOffsets } from '~/composables/useTreeOffsets.js';
+import { dimensions, initTreeDimensions, isInitialized, updateTreeDimensions } from '~/composables/useTreeDimensions.js';
+import { addFolderIds, clearFolderIds } from '~/composables/useTreeFolders.js';
+import { initTreeOffsets, updateToggledFolderOffsets } from '~/composables/useTreeOffsets.js';
 import { graphData } from '~/state/data.js';
 
 const props = defineProps<{
@@ -16,6 +17,8 @@ const props = defineProps<{
 const folderRefsKey = 'folders';
 const folderRefs = useTemplateRef<FolderInstance[]>(folderRefsKey);
 
+// ###
+
 onBeforeMount(() => {
   initTreeOffsets(props.tree);
   // console.log('before mounted CONTAINER');
@@ -23,7 +26,9 @@ onBeforeMount(() => {
 
 onMounted(() => {
   if (!folderRefs.value) throw new Error('Gnaaa!');
-  initTreeDimensions(props.tree, folderRefs.value);
+
+  initTreeDimensions(folderRefs.value);
+  updateTreeDimensions();
   // console.log('mounted CONTAINER');
 });
 
@@ -32,9 +37,51 @@ onUpdated(() => {
 });
 
 onUnmounted(() => {
+  clearFolderIds();
+  // @todo on 'tree-change'
+  // TypeError: can't access property "value", offsetsXBase[level] is undefined
+  // resetTreeOffsets();
   isInitialized.value = false;
   // console.log('unmounted CONTAINER');
 });
+
+// ###
+
+watch(
+  graphData,
+  (next) => {
+    if (next) {
+      /**
+       * @note
+       * graphData will be defined after offets are initiialized
+       * executed when an update of the module graph was triggered
+       * @todo doublecheck correct offsets when rerendered
+       */
+      const toggledIds = addFolderIds(...next.folderIds);
+
+      if (toggledIds.length) {
+        updateToggledFolderOffsets(false, toggledIds, props.tree, next);
+        updateTreeDimensions();
+      }
+    }
+  },
+  {
+    immediate: true,
+  },
+);
+
+// ###
+
+function handleToggledFolder(folderId: FolderID, value: boolean) {
+  if (value) {
+    addFolderIds(folderId);
+  } else {
+    deleteFolderIds(folderId);
+  }
+  updateToggledFolderOffsets(!value, [folderId], props.tree);
+}
+
+// ###
 </script>
 
 <template>
@@ -44,6 +91,7 @@ onUnmounted(() => {
       :width="dimensions.width"
       :height="dimensions.height"
     >
+      <!-- @todo draw one line from top to bottom => performance -->
       <TreeLink
         v-for="link of tree.folderLinks"
         :id="link.id"
@@ -65,6 +113,7 @@ onUnmounted(() => {
       :level="folder.level"
       :depth="folder.depth"
       :files="folder.fileIds.map(fileId => tree.files[fileId])"
+      @toggle="handleToggledFolder"
     />
     <Transition name="graph">
       <svg
@@ -73,11 +122,16 @@ onUnmounted(() => {
         :width="dimensions.width"
         :height="dimensions.height"
       >
+        <!-- @todo refactor -->
         <GraphLink
           v-for="link of graphData.links"
           :id="link.id"
           :key="link.id"
           :bundle="link.bundle"
+          :levels="graphData.levels"
+          :direction="link.direction"
+          :folder-ids="link.folderIds"
+          :height="link.height"
           :source="link.source"
           :target="link.target"
         />

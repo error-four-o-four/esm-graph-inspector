@@ -1,11 +1,11 @@
 <script lang="ts" setup>
-import type { FileData, FolderData } from '~~/shared/types/data.js';
+import type { FileData, FolderData, FolderID } from '~~/shared/types/data.js';
 
 import { computed, ref } from 'vue';
 
 import { folderHeights } from '~/composables/useTreeDimensions.js';
-import { addFolderIds, deleteFolderIds, openedFolderIds } from '~/composables/useTreeFolders.js';
-import { offsetX, offsetY } from '~/composables/useTreeOffsets.js';
+import { openedFolderIds } from '~/composables/useTreeFolders.js';
+import { offsetsX, offsetsY } from '~/composables/useTreeOffsets.js';
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '~/lib/tree-offsets.js';
 import { graphData } from '~/state/data.js';
 
@@ -17,8 +17,12 @@ type Props = Omit<FolderData, 'fileIds' | 'folderIds'> & {
 
 const props = defineProps<Props>();
 
-const left = computed(() => `${offsetX[props.depth].value}px`);
-const top = computed(() => `${offsetY[props.id].value}px`);
+const emit = defineEmits<{
+  (e: 'toggle', folderId: FolderID, value: boolean): void;
+}>();
+
+const left = computed(() => `${offsetsX[props.depth].value}px`);
+const top = computed(() => `${offsetsY[props.id].value}px`);
 
 const height = ref(`${DEFAULT_NODE_HEIGHT}px`);
 
@@ -36,15 +40,11 @@ function toggleOpenedState() {
   // if (props.active) return;
   if (isActive.value) return;
 
-  // if (props.opened) {
-  if (isOpened.value) {
-    deleteFolderIds(props.id);
-  } else {
-    addFolderIds(props.id);
-  }
+  emit('toggle', props.id, !isOpened.value);
 }
 
 async function updateHeight() {
+  // @todo => composable useTranstioning
   // if (props.opened) {
   if (isOpened.value) {
     // expand

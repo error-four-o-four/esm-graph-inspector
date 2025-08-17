@@ -57,23 +57,46 @@ export type ModuleData = Pick<
   | 'exports'
 >;
 
+export type ModuleGraphLinkID = `${FileID}|${FileID}`;
+
 export type ModuleGraphLinkData = {
-  id: string;
-  bundle: number;
+  id: ModuleGraphLinkID;
+  bundle: {
+    // used to determine the color/hue
+    index: number;
+    // used to determine horizontal offset position between folders
+    id: string;
+  };
+  direction: {
+    x: number;
+    y: number;
+  };
+  // used to handle special cases e.g. direction x > 1
+  folderIds: FolderID[];
+  height: number;
   source: {
     file: FileData;
-    folder: FolderData;
+    folder: FolderData; // @todo redundant ??
+    hasInbound: boolean;
   };
   target: {
     file: FileData;
-    folder: FolderData;
+    folder: FolderData; // @todo redundant ??
+    hasOutbound: boolean;
   };
 };
 
+/**
+ * @property {string} entry - the entry point
+ * @property {Record<FileID, FileID[]>} mappedFileIds - used to create linkIds, bundles etc.
+ * @property {FolderID[]} folderIds - used to expand folders of the file tree
+ * @property {ModuleGraphLinkData[]} links - the data
+ * @property {string[][]} levels - used to calculate horizontal spacing between folders
+ */
 export type ModuleGraphData = {
   entry: string;
-  fileIds: FileID[];
+  // mappedFileIds: Record<FileID, FileID[]>; // @todo redundant ??
   folderIds: FolderID[];
   links: ModuleGraphLinkData[];
-  linkIds: Record<string, string[]>;
+  levels: string[][];
 };

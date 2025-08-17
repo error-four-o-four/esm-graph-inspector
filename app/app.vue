@@ -3,18 +3,20 @@ import { computed, watch, watchEffect } from 'vue';
 
 import { requestPayload, socketStatus } from '~/composables/usePayload.js';
 import { isInitialized } from '~/composables/useTreeDimensions.js';
+import { isTransitioning } from '~/composables/useTreeOffsets.js';
 // import { addToast } from '~/composables/useToasts.js';
 import { errorData, graphData, treeData } from '~/state/data.js';
 
 const isReady = computed(() => treeData.value && isInitialized.value);
 
 watchEffect(async () => {
-  // console.log(status.value);
-
   if (socketStatus.value !== 'OPEN') return;
 
   if (errorData.value) {
     // @todo
+    // differentiate errors
+    // notify via toast, when graph === undefined
+
     // const { type, message } = errorData.value;
     // addToast(type, message);
 
@@ -26,9 +28,12 @@ watchEffect(async () => {
     return;
   }
 
+  if (isTransitioning.value) return;
+
   if (!treeData.value) {
     requestPayload({ type: 'tree' });
     await nextTick();
+    return;
   }
 
   if (treeData.value && !graphData.value) {
@@ -37,6 +42,7 @@ watchEffect(async () => {
   }
 });
 
+// handle scrollIntoView *only* when app is loaded
 onMounted(() => {
   const handler = watch(
     () => [isReady.value, graphData.value],
@@ -44,6 +50,7 @@ onMounted(() => {
       if (!isReady.value || !graphData.value) return;
 
       // @todo calculate min max graph svg and center/zoom
+      // @todo select entry point by default
 
       const elt = document.getElementById(graphData.value.entry);
       elt && elt.scrollIntoView({ behavior: 'smooth' });
@@ -58,7 +65,6 @@ onMounted(() => {
 // onUnmounted(() => console.log('unmounted APP'));
 
 // @todo expand/collapse all btns
-// @todo - precompute bundles per level and adjust horizontal spacing/offset of a folder
 </script>
 
 <template>

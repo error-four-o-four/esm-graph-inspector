@@ -1,37 +1,51 @@
-import type { FileID, FileTreeData, FolderID } from '~~/shared/types/data.js';
+import type { FileData, FileID, FolderID } from '~~/shared/types/data.js';
 
 import { ref } from 'vue';
 
 import type { FolderInstance } from '~/types/components.js';
 
-import { calcOffsetX, PADDING_X, PADDING_Y, SPACING_Y } from '../lib/tree-offsets.js';
-import { offsetX, offsetY, offsetYBase } from './useTreeOffsets.js';
+import { DEFAULT_NODE_WIDTH, FOLDER_SPACING_Y, TREE_PADDING_X, TREE_PADDING_Y } from '../lib/tree-offsets.js';
+import { folderIdsAtBottom, offsetsX, offsetsXBase, offsetsY, offsetsYBase } from './useTreeOffsets.js';
 
 export const dimensions = reactive({
   width: window.innerWidth,
   height: window.innerHeight,
 });
 
-// reference the last folder element per level
-// to calculate the max height
-// @todo consider bundles per level
-let folderIds: FolderID[];
-
 export const folderHeights: Record<FolderID, number> = {};
 
-export const fileOffsets: Record<FileID, {
+// const fileWidths: Record<FileID, number> = {};
+// const fileOffsetsTop: Record<FileID, number> = {};
+
+// @todo performance !
+const fileOffsets: Record<FileID, {
   x: ComputedRef<number>;
   y: ComputedRef<number>;
   width: number;
 }> = {};
 
+export function useFileOffsets(file: FileData) {
+  // const width = fileWidths[file.id];
+  // const top = fileOffsetsTop[file.id];
+
+  // const x = computed(() => offsetsX[file.depth].value)
+  // const y = computed(() => offsetsY[file.parent].value + top);
+
+  return fileOffsets[file.id];
+}
+
+/**
+ * Used to indicate that the Folder Components are mounted.
+ */
 export const isInitialized = ref(false);
 
-export function initTreeDimensions(data: FileTreeData, folderRefs: FolderInstance[]) {
-  folderIds = data.levels.map(level => level[level.length - 1]);
-
+/**
+ * Depends on the mounted Folder Components. Sets `useTreeDimensions#folderHeights` when initialized.
+ * Sets `isInitialized`. Calls `updateTreeDimensions`
+ * @param folderRefs - the component refs
+ */
+export function initTreeDimensions(folderRefs: FolderInstance[]) {
   initFolderHeights(folderRefs);
-  updateTreeDimensions();
 
   isInitialized.value = true;
 }
@@ -47,7 +61,7 @@ function initFolderHeights(folderRefs: FolderInstance[]) {
     if (!ulEl) throw new Error('Nope');
 
     // set folder height
-    folderHeights[folderId] = ulEl.offsetTop + ulEl.offsetHeight + SPACING_Y;
+    folderHeights[folderId] = ulEl.offsetTop + ulEl.offsetHeight + FOLDER_SPACING_Y;
 
     // use li elements to set file offsets
     const liEls = ulEl.querySelectorAll('li');
@@ -57,11 +71,14 @@ function initFolderHeights(folderRefs: FolderInstance[]) {
 
       if (!btnEl) throw new Error('Nope');
 
-      const levelOffsetRef = offsetX[depth];
-      const folderOffsetRef = offsetY[folderId];
+      const levelOffsetRef = offsetsX[depth];
+      const folderOffsetRef = offsetsY[folderId];
 
       const { offsetLeft, offsetTop, offsetHeight } = liEl;
       const { offsetWidth } = btnEl;
+
+      // fileWidths[liEl.id] = offsetWidth;
+      // fileOffsetsTop[liEl.id] = offsetTop + 0.5 * offsetHeight;
 
       fileOffsets[liEl.id] = {
         x: computed(() => levelOffsetRef.value + offsetLeft),
@@ -72,24 +89,23 @@ function initFolderHeights(folderRefs: FolderInstance[]) {
   }
 }
 
+export function resetTreeDimensions() {
+  // @todo
+  // consider to set dimensions to window.innerWidth & .innerHeight
+  // doublecheck neccessity
+  // folderHeights = {}
+}
+
 export function updateTreeDimensions() {
   // @todo consider sidebar width
+  // @todo call on watched graphdata change
   dimensions.width = Math.max(
     window.innerWidth,
-    calcOffsetX(folderIds.length) + 2 * PADDING_X,
+    offsetsXBase[offsetsXBase.length - 1].value + DEFAULT_NODE_WIDTH + 2 * TREE_PADDING_X,
   );
 
-  dimensions.height = folderIds.reduce((max, id) => {
-    const h = offsetYBase[id].value + folderHeights[id] + PADDING_Y;
+  dimensions.height = folderIdsAtBottom.reduce((max, id) => {
+    const h = offsetsYBase[id].value + folderHeights[id] + TREE_PADDING_Y;
     return h > max ? h : max;
   }, window.innerHeight);
 }
-
-// export default function useLayoutDimensions() {
-//   return {
-//     dimensions,
-//     fileOffsets,
-//     folderHeights,
-//     initLayoutDimensions,
-//   };
-// }

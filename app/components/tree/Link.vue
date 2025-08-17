@@ -3,20 +3,21 @@ import type { FolderLinkData } from '~~/shared/types/data.js';
 
 import { computed } from 'vue';
 
-import { offsetX, offsetY } from '~/composables/useTreeOffsets.js';
-import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '~/lib/tree-offsets.js';
+import { offsetsX, offsetsY } from '~/composables/useTreeOffsets.js';
+import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH, FOLDER_SPACING_X } from '~/lib/tree-offsets.js';
 
+// @todo draw one line from top to bottom => performance
 const { source, target } = defineProps<FolderLinkData>();
 
 const deltaY = 0.5 * DEFAULT_NODE_HEIGHT;
 
-const sourceX = computed(() => offsetX[source.depth].value + DEFAULT_NODE_WIDTH);
-const sourceY = computed(() => offsetY[source.id].value + deltaY);
+const sourceX = computed(() => offsetsX[source.depth].value + DEFAULT_NODE_WIDTH);
+const sourceY = computed(() => offsetsY[source.id].value + deltaY);
 
-const targetX = offsetX[target.depth];
-const targetY = computed(() => offsetY[target.id].value + deltaY);
+const targetX = offsetsX[target.depth];
+const targetY = computed(() => offsetsY[target.id].value + deltaY);
 
-const linkX = computed(() => targetX.value - 0.1 * DEFAULT_NODE_WIDTH);
+const linkX = computed(() => targetX.value - 0.5 * FOLDER_SPACING_X);
 </script>
 
 <template>
