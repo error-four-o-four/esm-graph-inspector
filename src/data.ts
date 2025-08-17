@@ -8,7 +8,7 @@ import { createEntryPoint } from './data/entrypoint.js';
 import { createFileTree, ignored } from './data/filetree.js';
 import { createModuleGraph } from './data/graph.js';
 import { notifyClients } from './handler/socket.js';
-import { hostLogger } from './utils.js';
+import { hostLogger, toRelative } from './utils.js';
 
 type UserOptions = {
   entry?: string;
@@ -23,7 +23,7 @@ let promisedModuleGraph: Promise<ModuleGraphData | undefined> | undefined;
 export function setUserEntryPoint(s: string) {
   promisedEntryPoint = undefined;
   promisedModuleGraph = undefined;
-  userEntryPoint = s;
+  userEntryPoint = toRelative(s);
 }
 
 export function getPromisedFileTree() {

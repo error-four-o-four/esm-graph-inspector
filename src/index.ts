@@ -10,6 +10,10 @@ const argv = cli({
   name: PKG_NAME,
   version: PKG_VERSION,
 
+  parameters: [
+    '[entrypoint]',
+  ],
+
   flags: {
     host: {
       type: String,
@@ -22,8 +26,8 @@ const argv = cli({
   },
 });
 
-// @todo create, parse and pass argv.flags.entry
-initialize();
+// @todo allow multiply entry points
+initialize({ entry: argv._.entrypoint });
 
 const { server, port, host, url } = await createServer(argv.flags);
 
