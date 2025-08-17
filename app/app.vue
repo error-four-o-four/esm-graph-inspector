@@ -7,6 +7,8 @@ import { isInitialized } from '~/composables/useTreeDimensions.js';
 import { isTransitioning } from '~/composables/useTreeOffsets.js';
 import { appStateData, graphData, treeData } from '~/state/data.js';
 
+import { selectedFile, selectFile } from './state/selected.js';
+
 const isReady = computed(() => treeData.value && isInitialized.value);
 
 watchEffect(async () => {
@@ -24,6 +26,12 @@ watchEffect(async () => {
   if (treeData.value && !graphData.value && !appStateData.value) {
     requestPayload({ type: 'graph' });
     await nextTick();
+    return;
+  }
+
+  if (graphData.value && !selectedFile.value) {
+    const entry = treeData.value.files[graphData.value.entry];
+    selectFile(entry);
   }
 });
 

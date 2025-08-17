@@ -7,7 +7,7 @@ import { computed, nextTick } from 'vue';
 
 import { requestPayload } from '~/composables/usePayload.js';
 import { appStateData, graphData } from '~/state/data.js';
-import { selectFile } from '~/state/selected.js';
+import { selectedFile, selectFile } from '~/state/selected.js';
 
 const { specs } = defineProps<{
   specs: FileData;
@@ -40,7 +40,7 @@ async function handleClick() {
       variant="ghost"
       size="xs"
       class="pb-1.5"
-      :class="{ 'text-neutral-500': isDisabled }"
+      :class="{ 'text-neutral-500': isDisabled, 'bg-cyan-700': selectedFile?.id === specs.id }"
       :disabled="isDisabled"
       @click="handleClick"
     >

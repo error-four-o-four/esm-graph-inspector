@@ -11,9 +11,11 @@ import {
   FOLDER_SPACING_X,
   GRAPH_LINK_MARGIN_X,
 } from '~/lib/tree-offsets.js';
+import { selectedFile } from '~/state/selected.js';
 
 type Props = ModuleGraphLinkData & {
   levels: ModuleGraphData['levels'];
+  selected?: boolean;
 };
 
 const props = defineProps<Props>();
@@ -143,16 +145,35 @@ const pathArrow = computed(() => {
 //   ].join('\n');
 // }
 
-const color = `hsl(${60 + (props.bundle.index * 30) % 360}, 40%, 40%)`;
+const color = computed(() => {
+  // @todo meh
+  // selectedFile vs props.selected
+  const hue = 60 + (props.bundle.index * 30) % 360;
+
+  if (!selectedFile.value) return `hsl(${hue}, 40%, 40%)`;
+
+  if (selectedFile.value.id === props.source.file.id) return `hsl(330, 100%, 60%)`;
+
+  if (selectedFile.value.id === props.target.file.id) return `hsl(180, 100%, 60%)`;
+
+  return `hsl(${hue}, 10%, 40%)`;
+});
 </script>
 
 <template>
-  <g :id="id" :stroke="color" :fill="color">
+  <g
+    :id="id"
+    :stroke="color"
+    :stroke-width="props.selected ? 1 : 2"
+    :fill="color"
+    class="relative"
+    style="transition: stroke 300ms ease;"
+  >
     <circle :cx="sourceX + 2" :cy="sourceY" r="3" stroke="none" />
     <path
       :d="pathLink"
       fill="none"
-      stroke-dasharray="8 3"
+      :stroke-dasharray="props.selected ? '' : '8 3'"
     />
     <!-- @todo overlapping paths (!) -->
     <path

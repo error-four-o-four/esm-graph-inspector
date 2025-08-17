@@ -11,7 +11,7 @@ const crumbs = computed(() => {
 </script>
 
 <template>
-  <div class="fixed top-0 right-8 py-4 w-1/4 min-w-64">
+  <div class="fixed top-0 right-8 z-50 py-4 w-1/4 min-w-64">
     <div
       class="
       flex flex-col h-full
@@ -26,6 +26,7 @@ const crumbs = computed(() => {
         </div>
         <div v-else class="flex flex-col gap-1.5">
           <div>{{ crumbs }}<strong>{{ selectedFile.name }}</strong></div>
+          <div>Not implemented yet ...</div>
           <!--
           <div v-if="imports">
             <strong>Imports</strong>

@@ -11,7 +11,7 @@ const iconName: Record<ToastType, string> = {
 </script>
 
 <template>
-  <div class="fixed bottom-8 right-8 w-1/4 min-w-64">
+  <div class="fixed bottom-8 right-8 z-20 w-1/4 min-w-64">
     <TransitionGroup name="list">
       <div
         v-for="toast in toasts"

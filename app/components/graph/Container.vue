@@ -9,6 +9,7 @@ import { dimensions, initTreeDimensions, isInitialized, updateTreeDimensions } f
 import { addFolderIds, clearFolderIds } from '~/composables/useTreeFolders.js';
 import { initTreeOffsets, updateToggledFolderOffsets } from '~/composables/useTreeOffsets.js';
 import { graphData } from '~/state/data.js';
+import { selectedFile } from '~/state/selected.js';
 
 const props = defineProps<{
   tree: FileTreeData;
@@ -117,26 +118,49 @@ function handleToggledFolder(folderId: FolderID, value: boolean) {
       @toggle="handleToggledFolder"
     />
     <Transition name="graph">
-      <svg
-        v-if="isInitialized && graphData"
-        class="pointer-events-none absolute left-0 top-0 stroke-2"
-        :width="dimensions.width"
-        :height="dimensions.height"
-      >
-        <!-- @todo refactor -->
-        <GraphLink
-          v-for="link of graphData.links"
-          :id="link.id"
-          :key="link.id"
-          :bundle="link.bundle"
-          :levels="graphData.levels"
-          :direction="link.direction"
-          :folder-ids="link.folderIds"
-          :height="link.height"
-          :source="link.source"
-          :target="link.target"
-        />
-      </svg>
+      <div v-if="isInitialized && graphData">
+        <svg
+
+          class="pointer-events-none absolute left-0 top-0 z-10 stroke-2"
+          :width="dimensions.width"
+          :height="dimensions.height"
+        >
+          <!-- @todo refactor -->
+          <GraphLink
+            v-for="link of graphData.links"
+            :id="link.id"
+            :key="link.id"
+            :bundle="link.bundle"
+            :levels="graphData.levels"
+            :direction="link.direction"
+            :folder-ids="link.folderIds"
+            :height="link.height"
+            :source="link.source"
+            :target="link.target"
+          />
+        </svg>
+        <svg
+          v-if="selectedFile"
+          class="pointer-events-none absolute left-0 top-0 z-20 stroke-2"
+          :width="dimensions.width"
+          :height="dimensions.height"
+        >
+          <!-- @todo refactor -->
+          <GraphLink
+            v-for="link of graphData.links.filter(link => link.source.file.id === selectedFile?.id || link.target.file.id === selectedFile?.id)"
+            :id="link.id"
+            :key="link.id"
+            :bundle="link.bundle"
+            :levels="graphData.levels"
+            :direction="link.direction"
+            :folder-ids="link.folderIds"
+            :height="link.height"
+            :source="link.source"
+            :target="link.target"
+            :selected="true"
+          />
+        </svg>
+      </div>
     </Transition>
   </Draggable>
 </template>
